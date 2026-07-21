@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PulseAI | Executive View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        .premium-card {
+            background: #FFFFFF;
+            border: 1px solid #E6E6ED;
+            box-shadow: 0 4px 20px rgba(55, 55, 66, 0.03);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#ba002a", // InfoBeans Brand Red
+                        "background": "#FFF9ED", // Light Cream
+                        "surface": "#FFFFFF",
+                        "charcoal": "#373742",
+                        "medium-gray": "#676775",
+                        "light-gray": "#E6E6ED",
+                        "surface-container": "#f9f9ff",
+                        "outline-variant": "#e6bcbb",
+                        "secondary": "#5e5d69",
+                        "tertiary": "#b11f38"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-desktop": "48px",
+                        "lg": "40px",
+                        "gutter": "24px",
+                        "sm": "16px",
+                        "md": "24px"
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "300"}],
+                        "headline-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "300"}],
+                        "headline-md": ["28px", {"lineHeight": "36px", "fontWeight": "300"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "300"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "300"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-charcoal font-body-md overflow-x-hidden">
+<!-- Side Navigation Bar -->
+<aside class="h-screen w-[280px] fixed left-0 top-0 overflow-y-auto border-r border-light-gray bg-surface flex flex-col z-50">
+<div class="p-8 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary flex items-center justify-center rounded">
+<i class="ph ph-pulse text-white text-2xl"></i>
+</div>
+<div>
+<h1 class="text-xl font-semibold text-charcoal tracking-tight">PulseAI</h1>
+<p class="text-[10px] uppercase tracking-widest text-medium-gray font-medium">Deliver confidence</p>
+</div>
+</div>
+<nav class="flex-1 mt-4">
+<a class="flex items-center gap-4 px-8 py-3 bg-background text-primary border-r-4 border-primary transition-all" href="#">
+<i class="ph ph-squares-four text-xl"></i>
+<span class="text-body-md font-normal">Executive view</span>
+</a>
+<a class="flex items-center gap-4 px-8 py-3 text-medium-gray hover:text-charcoal hover:bg-background/50 transition-colors" href="#">
+<i class="ph ph-brain text-xl"></i>
+<span class="text-body-md">Project intelligence</span>
+</a>
+<a class="flex items-center gap-4 px-8 py-3 text-medium-gray hover:text-charcoal hover:bg-background/50 transition-colors" href="#">
+<i class="ph ph-users-three text-xl"></i>
+<span class="text-body-md">Resource planning</span>
+</a>
+<a class="flex items-center gap-4 px-8 py-3 text-medium-gray hover:text-charcoal hover:bg-background/50 transition-colors" href="#">
+<i class="ph ph-warning-circle text-xl"></i>
+<span class="text-body-md">Risk management</span>
+</a>
+<a class="flex items-center gap-4 px-8 py-3 text-medium-gray hover:text-charcoal hover:bg-background/50 transition-colors" href="#">
+<i class="ph ph-sparkle text-xl"></i>
+<span class="text-body-md">AI insights</span>
+</a>
+<a class="flex items-center gap-4 px-8 py-3 text-medium-gray hover:text-charcoal hover:bg-background/50 transition-colors" href="#">
+<i class="ph ph-gear text-xl"></i>
+<span class="text-body-md">System admin</span>
+</a>
+</nav>
+<div class="mt-auto p-6 border-t border-light-gray">
+<button class="w-full bg-charcoal hover:bg-primary text-white py-3 px-4 rounded font-label-md text-label-md transition-all flex items-center justify-center gap-2 mb-4">
+<i class="ph ph-plus-circle text-lg"></i>
+                Analyze new project
+            </button>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-medium-gray hover:text-charcoal transition-colors" href="#">
+<i class="ph ph-question text-lg"></i>
+<span class="text-xs">Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-medium-gray hover:text-charcoal transition-colors" href="#">
+<i class="ph ph-sliders text-lg"></i>
+<span class="text-xs">Settings</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-[280px] min-h-screen">
+<!-- Top App Bar -->
+<header class="h-20 sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-light-gray flex justify-between items-center px-margin-desktop shadow-sm">
+<div class="flex items-center gap-12">
+<div class="relative">
+<i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-medium-gray"></i>
+<input class="bg-background border-none rounded-sm pl-10 pr-4 py-2 text-sm w-80 focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-medium-gray/50" placeholder="Search portfolio..." type="text"/>
+</div>
+<nav class="hidden md:flex gap-8">
+<a class="text-label-md text-primary font-medium border-b-2 border-primary pb-6" href="#">Dashboard</a>
+<a class="text-label-md text-medium-gray hover:text-charcoal transition-colors" href="#">Analytics</a>
+<a class="text-label-md text-medium-gray hover:text-charcoal transition-colors" href="#">Reports</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<button class="flex items-center gap-2 px-4 py-2 bg-primary/5 text-primary rounded-sm font-label-md text-label-md hover:bg-primary/10 transition-all">
+<i class="ph ph-sparkle"></i>
+                    Generate insights
+                </button>
+<div class="h-6 w-[1px] bg-light-gray"></div>
+<button class="text-medium-gray hover:text-charcoal transition-colors relative">
+<i class="ph ph-bell text-2xl"></i>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<div class="flex items-center gap-3">
+<img alt="Profile" class="w-10 h-10 rounded-full border border-light-gray object-cover grayscale-[20%]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmEM0msgvP5hYnaKzU4Fck5iVUgSaHxiu_G7Dhu3WHBus-YOVepTwN5qQaLF7cMWCXgXROTicJFJj7ttp_6dU3-SkIM6j0Yg_xwGof2ZbpYqZfE9opsyVV_JUNJstwe3huBudOPiH5LxPbElgjTuPqKuHWaz8ASYLs2Ho-T8elTfw_JDntrnRIYmAX4O91v6tA3QEQHfJSmpND8Aszq6Wcvy_e2uF2oNbehqSnoQxSngz27JX9i-dQwiTVzgdZaKVLYEFgmh3lm0QW"/>
+</div>
+</div>
+</header>
+<!-- Dashboard Canvas -->
+<div class="p-12 space-y-gutter max-w-[1400px] mx-auto">
+<!-- Hero Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+<!-- Confidence Score -->
+<div class="lg:col-span-2 premium-card rounded-xl p-10 flex flex-col justify-between border-l-4 border-l-primary">
+<div class="flex justify-between items-start mb-10">
+<div>
+<h3 class="text-xs uppercase tracking-[0.2em] text-medium-gray font-medium mb-1">PulseAI prediction</h3>
+<p class="text-headline-lg text-charcoal">Overall confidence</p>
+</div>
+<span class="bg-primary/10 text-primary px-3 py-1 rounded text-xs font-semibold">+4.2% PW</span>
+</div>
+<div class="flex items-center gap-16">
+<div class="relative w-44 h-44 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-light-gray" cx="88" cy="88" fill="transparent" r="80" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary" cx="88" cy="88" fill="transparent" r="80" stroke="currentColor" stroke-dasharray="502" stroke-dashoffset="40" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="text-display-lg text-charcoal leading-none">92</span>
+<span class="text-[10px] uppercase tracking-widest font-semibold text-medium-gray mt-2">Optimal</span>
+</div>
+</div>
+<div class="flex-1 space-y-6">
+<div class="space-y-2">
+<div class="flex justify-between text-xs">
+<span class="text-medium-gray">Stability</span>
+<span class="text-charcoal font-medium">92%</span>
+</div>
+<div class="h-1.5 w-full bg-light-gray rounded-full overflow-hidden">
+<div class="h-full bg-charcoal w-[92%]"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs">
+<span class="text-medium-gray">Momentum</span>
+<span class="text-primary font-medium">Accelerate</span>
+</div>
+<div class="h-1.5 w-full bg-light-gray rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[75%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- KPI Cards -->
+<div class="premium-card rounded-xl p-8 flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-4">
+<i class="ph ph-currency-dollar text-medium-gray text-xl"></i>
+<h3 class="text-xs uppercase tracking-widest text-medium-gray font-medium">Budget health</h3>
+</div>
+<p class="text-display-lg text-charcoal">$1.2M</p>
+<p class="text-xs text-primary font-medium mt-2">8% under forecast</p>
+</div>
+<div class="h-16 w-full mt-6 opacity-30">
+<svg class="w-full h-full" viewbox="0 0 200 60">
+<path d="M0 40 Q 20 10, 40 30 T 80 10 T 120 35 T 160 20 T 200 45" fill="none" stroke="#ba002a" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+<div class="premium-card rounded-xl p-8 flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-4">
+<i class="ph ph-check-circle text-medium-gray text-xl"></i>
+<h3 class="text-xs uppercase tracking-widest text-medium-gray font-medium">Quality health</h3>
+</div>
+<p class="text-display-lg text-charcoal">98.4%</p>
+<p class="text-xs text-secondary font-medium mt-2">Zero critical defects</p>
+</div>
+<div class="h-16 w-full mt-6 opacity-30">
+<svg class="w-full h-full" viewbox="0 0 200 60">
+<path d="M0 45 Q 30 40, 60 42 T 90 30 T 120 20 T 150 15 T 200 5" fill="none" stroke="#373742" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Second Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- AI Executive Summary -->
+<div class="lg:col-span-2 premium-card rounded-xl p-10 border-t-4 border-t-primary relative">
+<div class="absolute right-8 top-8">
+<i class="ph ph-sparkle text-primary/20 text-4xl"></i>
+</div>
+<h3 class="text-headline-md text-charcoal mb-8">Predict the outcome</h3>
+<div class="grid md:grid-cols-2 gap-10">
+<ul class="space-y-6">
+<li class="flex gap-5">
+<div class="w-10 h-10 rounded-full bg-background flex items-center justify-center flex-shrink-0">
+<i class="ph ph-chart-line-up text-primary"></i>
+</div>
+<div class="space-y-1">
+<p class="text-sm font-semibold text-charcoal">Optimize delivery velocity</p>
+<p class="text-body-md text-medium-gray">Platform migration is trending 12% faster than baseline due to automated test coverage.</p>
+</div>
+</li>
+<li class="flex gap-5">
+<div class="w-10 h-10 rounded-full bg-background flex items-center justify-center flex-shrink-0">
+<i class="ph ph-users text-primary"></i>
+</div>
+<div class="space-y-1">
+<p class="text-sm font-semibold text-charcoal">Improve resource efficiency</p>
+<p class="text-body-md text-medium-gray">Cross-training has reduced single-point-of-failure risks by 40% in core teams.</p>
+</div>
+</li>
+</ul>
+<ul class="space-y-6">
+<li class="flex gap-5">
+<div class="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center flex-shrink-0">
+<i class="ph ph-warning text-primary"></i>
+</div>
+<div class="space-y-1">
+<p class="text-sm font-semibold text-charcoal">Mitigate critical slip</p>
+<p class="text-body-md text-medium-gray">External API dependency for payments has a 15% probability of a 3-day delay.</p>
+</div>
+</li>
+<li class="flex gap-5">
+<div class="w-10 h-10 rounded-full bg-background flex items-center justify-center flex-shrink-0">
+<i class="ph ph-coins text-primary"></i>
+</div>
+<div class="space-y-1">
+<p class="text-sm font-semibold text-charcoal">Reallocate budget</p>
+<p class="text-body-md text-medium-gray">Reallocate $45k from contingency to cloud optimization for immediate ROI.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<!-- PulseAI Chat -->
+<div class="premium-card rounded-xl p-8 flex flex-col bg-surface-container">
+<div class="flex-1 flex flex-col justify-center items-center text-center">
+<div class="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-6 border border-light-gray">
+<i class="ph ph-chat-circle-dots text-primary text-3xl"></i>
+</div>
+<h4 class="text-headline-md text-charcoal mb-3">Ask PulseAI</h4>
+<p class="text-medium-gray text-body-md mb-8">Instant answers on budget, timelines, or portfolio risks.</p>
+<div class="w-full relative">
+<input class="w-full bg-white border border-light-gray rounded-sm px-4 py-4 text-sm focus:ring-1 focus:ring-primary/20 focus:outline-none pr-12 shadow-sm" placeholder="Ask about project Atlas..." type="text"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-primary hover:scale-110 transition-transform">
+<i class="ph ph-paper-plane-tilt text-xl"></i>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Risks Section -->
+<section class="space-y-6">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="text-headline-md text-charcoal">Address priority risks</h2>
+<p class="text-medium-gray text-body-md">Critical action items requiring attention</p>
+</div>
+<button class="text-sm font-medium text-primary flex items-center gap-2 hover:underline">
+                        View risk register <i class="ph ph-arrow-right"></i>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="premium-card rounded-xl p-8 border-t-4 border-t-primary">
+<div class="flex justify-between items-center mb-6">
+<span class="text-[10px] uppercase font-bold tracking-widest text-primary bg-primary/5 px-2 py-1 rounded">High impact</span>
+<span class="text-xs text-medium-gray">R-452</span>
+</div>
+<h4 class="text-body-lg font-medium text-charcoal mb-3">API Latency issues</h4>
+<p class="text-sm text-medium-gray mb-6 leading-relaxed">External vendor API is showing inconsistent response times for checkout metrics.</p>
+<div class="p-4 bg-background border border-light-gray rounded">
+<p class="text-[10px] font-bold text-primary uppercase mb-2">Outcome</p>
+<p class="text-xs text-charcoal leading-snug">Implement circuit breaker pattern to maintain 99% uptime.</p>
+</div>
+</div>
+<div class="premium-card rounded-xl p-8 border-t-4 border-t-charcoal">
+<div class="flex justify-between items-center mb-6">
+<span class="text-[10px] uppercase font-bold tracking-widest text-charcoal bg-light-gray px-2 py-1 rounded">Medium impact</span>
+<span class="text-xs text-medium-gray">R-459</span>
+</div>
+<h4 class="text-body-lg font-medium text-charcoal mb-3">Manage scope creep</h4>
+<p class="text-sm text-medium-gray mb-6 leading-relaxed">Stakeholder requirements exceed current sprint capacity by 14 story points.</p>
+<div class="p-4 bg-background border border-light-gray rounded">
+<p class="text-[10px] font-bold text-primary uppercase mb-2">Outcome</p>
+<p class="text-xs text-charcoal leading-snug">Defer "Legacy Export" to Q4 to preserve launch window.</p>
+</div>
+</div>
+<div class="premium-card rounded-xl p-8 border-t-4 border-t-medium-gray">
+<div class="flex justify-between items-center mb-6">
+<span class="text-[10px] uppercase font-bold tracking-widest text-medium-gray bg-light-gray px-2 py-1 rounded">Efficiency</span>
+<span class="text-xs text-medium-gray">R-461</span>
+</div>
+<h4 class="text-body-lg font-medium text-charcoal mb-3">Cloud cost control</h4>
+<p class="text-sm text-medium-gray mb-6 leading-relaxed">Development environments are running 24/7. Forecast exceeded by $12k.</p>
+<div class="p-4 bg-background border border-light-gray rounded">
+<p class="text-[10px] font-bold text-primary uppercase mb-2">Outcome</p>
+<p class="text-xs text-charcoal leading-snug">Auto-shutdown non-prod instances daily at 19:00 EST.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Trends Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-12">
+<div class="premium-card rounded-xl p-10">
+<div class="flex justify-between items-center mb-10">
+<div>
+<h3 class="text-headline-md text-charcoal">Confidence trend</h3>
+<p class="text-xs text-medium-gray">Sprints 30—42 Performance</p>
+</div>
+<div class="flex gap-6">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+<span class="text-xs text-charcoal">Project A</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-light-gray"></span>
+<span class="text-xs text-medium-gray">Portfolio avg</span>
+</div>
+</div>
+</div>
+<div class="h-64 w-full relative">
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none">
+<path d="M0 180 L 50 160 L 100 170 L 150 140 L 200 120 L 250 130 L 300 100 L 350 80 L 400 90 L 450 70 L 500 60" fill="none" opacity="0.8" stroke="#ba002a" stroke-linecap="round" stroke-width="3"></path>
+<path d="M0 200 L 50 190 L 100 195 L 150 180 L 200 170 L 250 175 L 300 160 L 350 155 L 400 150 L 450 145 L 500 140" fill="none" stroke="#E6E6ED" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+<div class="absolute bottom-0 left-0 w-full flex justify-between px-2">
+<div class="w-1 h-32 bg-light-gray/20 rounded-t"></div>
+<div class="w-1 h-36 bg-light-gray/20 rounded-t"></div>
+<div class="w-1 h-40 bg-light-gray/20 rounded-t"></div>
+<div class="w-1 h-38 bg-light-gray/20 rounded-t"></div>
+<div class="w-1 h-44 bg-light-gray/20 rounded-t"></div>
+<div class="w-1 h-52 bg-primary/40 rounded-t"></div>
+</div>
+</div>
+</div>
+<div class="premium-card rounded-xl p-10">
+<div class="flex justify-between items-center mb-8">
+<h3 class="text-headline-md text-charcoal">Current sprint (S42)</h3>
+<span class="text-xs text-primary font-medium px-2 py-1 bg-primary/5 rounded">4 days left</span>
+</div>
+<div class="space-y-10">
+<div class="space-y-3">
+<div class="flex justify-between items-end">
+<span class="text-sm font-medium text-charcoal">Total completion</span>
+<span class="text-headline-md text-primary">78%</span>
+</div>
+<div class="h-3 w-full bg-background border border-light-gray rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 78%"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div class="bg-background p-6 rounded border border-light-gray">
+<p class="text-[10px] text-medium-gray uppercase font-bold tracking-widest mb-2">Velocity</p>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-light text-charcoal">42</span>
+<span class="text-xs text-medium-gray">pts/avg</span>
+</div>
+</div>
+<div class="bg-background p-6 rounded border border-light-gray">
+<p class="text-[10px] text-medium-gray uppercase font-bold tracking-widest mb-2">Throughput</p>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-light text-charcoal">12</span>
+<span class="text-xs text-medium-gray">tickets/d</span>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<h4 class="text-[10px] font-bold uppercase tracking-wider text-medium-gray">Active resources</h4>
+<div class="flex -space-x-3">
+<img class="w-10 h-10 rounded-full border-2 border-white object-cover grayscale-[30%]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-yyj8CybuFa9Y-YHpBinTkef2RZBBMUQVsa4UIOEuZZ2o7CrIsLHkRD8lH3lkgQ4vYvF1zRv3BDgtnf_lxo0Cu1WpZe6imKyGSu0roI781d_rOXkIM7tlu_DGDTOP0WfSOx4obR1lFQLfOEtSCLyY1t52GC_3_TKJSza3ZS-YeHAIkMxFgYOEpg77LHqHKSfs9F6XzCOIu2_aJNoPpcRuCPQLXWuLFtxj2GGbnnYLbTONEwHqUkcrwYUBphmHqy3Xv6aFnMxSAI5h"/>
+<img class="w-10 h-10 rounded-full border-2 border-white object-cover grayscale-[30%]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7qmfnHblqPg58o6vuTmtjuXTdKFVaK0miilDcCEEi3WIl2nLklVREPCAhedmp7UbxFNSXLGRdFrIhbLpnu1po-xNE2nOwdKoADfbTlB86N-YjB4vewH0Af0crakJy2AiGTEArsRV00cmXUBC9m_m8SICJmQHGZ0SxUPdHf8V4wOa4qtOBAyIddctvsCBBl9CTUsuNd2zN7f7GfL5-cWMYI46ARE4LzaqIHzPu5sVWhyVNIZZ1U3tnpCPjEaxQShXbyXbx6477MGZ_"/>
+<img class="w-10 h-10 rounded-full border-2 border-white object-cover grayscale-[30%]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbxrcUN-f2c85tj3Rj1bqcnGnBCNLp1_IHtnbsty_b5RCcePg0yHMsXHiNlz7EgHnV1E_FFUKc-rYMS0Hzp_aEKjW0uS8rotSuzg22eaVhsi4cd2Xz5cSkd1I8fPMIP6QcePJmKgb6tMNarH9ivs5LIXSX1Y4eN3HNkgiyJ3PTD_KwlcEEyAxYEampVqcbLSU6bnZK3NAtNcD1NKG_EwMsY9WM3TFJ7oxjlQF_QVWnIc6n-puqXPUiV07EJi0BAQi_Abt5r5Ic9Evh"/>
+<div class="w-10 h-10 rounded-full border-2 border-white bg-light-gray flex items-center justify-center text-[10px] font-bold text-medium-gray">+8</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating AI Trigger -->
+<button class="fixed bottom-10 right-10 w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group">
+<i class="ph ph-chat-text text-3xl"></i>
+<span class="absolute -top-1 -right-1 w-5 h-5 bg-charcoal border-2 border-white rounded-full flex items-center justify-center">
+<span class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
+</span>
+</button>
+</body></html>

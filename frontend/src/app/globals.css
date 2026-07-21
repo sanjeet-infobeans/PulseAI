@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-lexend), Verdana, sans-serif;
+    font-weight: 300;
+    color: #373742;
+    background: #fff9ed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 300;
+    color: #373742;
+  }
+
+  /* Brand: eyebrow labels are the only ALL CAPS element */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #676775;
+    line-height: 1;
+  }
+}
+
+@layer components {
+  /* Signature card: white, hairline border, soft shadow (code.html .premium-card) */
+  .premium-card {
+    background: #ffffff;
+    border: 1px solid #e6e6ed;
+    box-shadow: 0 4px 20px rgba(55, 55, 66, 0.03);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Markdown output (AI analysis / chat) */
+  .prose-pulse {
+    color: #373742;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .prose-pulse h1, .prose-pulse h2, .prose-pulse h3 {
+    font-weight: 400;
+    margin: 1.2em 0 0.5em;
+  }
+  .prose-pulse h2 { font-size: 20px; }
+  .prose-pulse h3 { font-size: 16px; }
+  .prose-pulse p { margin: 0.7em 0; }
+  .prose-pulse ul, .prose-pulse ol { margin: 0.7em 0; padding-left: 1.4em; }
+  .prose-pulse li { margin: 0.3em 0; }
+  .prose-pulse strong { font-weight: 500; }
+  .prose-pulse code {
+    background: #f9f9ff; border: 1px solid #e6e6ed; border-radius: 3px;
+    padding: 1px 5px; font-size: 0.9em;
+  }
+  .prose-pulse table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+  .prose-pulse th, .prose-pulse td { border: 1px solid #e6e6ed; padding: 6px 10px; text-align: left; }
+}
