@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import type { UserRole } from "@/types/api"
 import { clearToken, getToken } from "@/lib/api"
 
@@ -19,8 +20,7 @@ export interface CurrentUser {
   orgId: string
 }
 
-export function useCurrentUser(): CurrentUser | null {
-  if (typeof window === "undefined") return null
+function readCurrentUser(): CurrentUser | null {
   const token = getToken()
   if (!token) return null
   try {
@@ -35,6 +35,23 @@ export function useCurrentUser(): CurrentUser | null {
   } catch {
     return null
   }
+}
+
+/**
+ * The current user, decoded from the stored JWT.
+ *
+ * Returns null on the server and on the first client render so the initial
+ * client tree matches the server-rendered HTML, then resolves the real user
+ * after mount. Reading the token during render desyncs SSR/CSR and triggers a
+ * hydration mismatch (the sidebar's super-admin nav group would render on the
+ * client but not the server).
+ */
+export function useCurrentUser(): CurrentUser | null {
+  const [user, setUser] = useState<CurrentUser | null>(null)
+  useEffect(() => {
+    setUser(readCurrentUser())
+  }, [])
+  return user
 }
 
 export function signOut(): void {
