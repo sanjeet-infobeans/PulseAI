@@ -26,8 +26,8 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <main className="ml-[280px] min-h-screen">
-        <Topbar title={title} />
+      <Topbar title={title} />
+      <main className="ml-[280px] min-h-screen pt-20">
         <div className="p-12 max-w-[1400px] mx-auto">{children}</div>
       </main>
       {showFab && <ChatFab />}

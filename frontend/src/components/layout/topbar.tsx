@@ -4,7 +4,7 @@ import { MagnifyingGlass, Sparkle, Bell } from "@phosphor-icons/react"
 
 export function Topbar({ title }: { title?: string }) {
   return (
-    <header className="h-20 sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-light-gray flex justify-between items-center px-margin-desktop">
+    <header className="h-20 fixed top-0 left-[280px] right-0 z-40 bg-surface/95 backdrop-blur-md border-b border-light-gray flex justify-between items-center px-margin-desktop">
       <div className="flex items-center gap-8">
         {title ? (
           <h2 className="text-headline-md text-charcoal">{title}</h2>
