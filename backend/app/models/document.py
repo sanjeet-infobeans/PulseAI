@@ -46,7 +46,10 @@ class Document(Base):
     )
     filename: Mapped[str] = mapped_column(String(512), nullable=False)
     doc_type: Mapped[DocType] = mapped_column(
-        SQLEnum(DocType, name="doc_type_enum", native_enum=False),
+        # Explicit length: without it SQLAlchemy sizes the VARCHAR to the longest
+        # enum value at table-creation time, so adding a longer value later
+        # silently outgrows the column (see migration 002).
+        SQLEnum(DocType, name="doc_type_enum", native_enum=False, length=64),
         nullable=False,
         default=DocType.other,
     )
@@ -54,7 +57,7 @@ class Document(Base):
     storage_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     status: Mapped[DocStatus] = mapped_column(
-        SQLEnum(DocStatus, name="doc_status_enum", native_enum=False),
+        SQLEnum(DocStatus, name="doc_status_enum", native_enum=False, length=32),
         nullable=False,
         default=DocStatus.uploaded,
     )
