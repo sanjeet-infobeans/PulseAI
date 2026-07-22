@@ -54,11 +54,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: /api
     restart: unless-stopped
     expose:
       - "3000"
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost/api
     depends_on:
       api:
         condition: service_healthy
