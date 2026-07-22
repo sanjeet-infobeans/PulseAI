@@ -22,6 +22,7 @@ import type {
   ProjectOutcome,
   RequirementDriftItem,
   ResourceRiskData,
+  ResourcesData,
   ScopeCreepData,
   SentimentData,
   Sprint,
@@ -189,6 +190,7 @@ export const api = {
 
   resources: {
     get: (projectId: string) => apiFetch<ResourceRiskData>(`/projects/${projectId}/resources`),
+    getRoster: (projectId: string) => apiFetch<ResourcesData>(`/projects/${projectId}/resources/roster`),
   },
 
   sentiment: {

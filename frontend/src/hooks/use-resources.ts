@@ -10,3 +10,11 @@ export function useResourceRisk(projectId: string) {
     enabled: !!projectId,
   })
 }
+
+export function useResources(projectId: string) {
+  return useQuery({
+    queryKey: ["resources-roster", projectId],
+    queryFn: () => api.resources.getRoster(projectId),
+    enabled: !!projectId,
+  })
+}
