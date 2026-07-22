@@ -69,6 +69,17 @@ class Document(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    # Versioning (requirement drift, #3): groups re-uploads of "the same"
+    # document (e.g. a revised BRD) so extractions can be diffed across
+    # versions. version_group_id defaults to the document's own id on first
+    # upload — i.e. every document is version 1 of its own group until a
+    # later upload explicitly supersedes it.
+    version_group_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    supersedes_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("documents.id", ondelete="SET NULL"), nullable=True
+    )
+
     extraction: Mapped["DocumentExtraction | None"] = relationship(
         "DocumentExtraction", back_populates="document", uselist=False,
         cascade="all, delete-orphan",
@@ -86,6 +97,7 @@ class DocumentExtraction(Base):
     )
     extraction: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    diff_from_previous: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     model: Mapped[str | None] = mapped_column(String(128), nullable=True)
     input_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     output_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

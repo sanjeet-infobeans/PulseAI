@@ -21,6 +21,7 @@ class ConfidenceOut(BaseModel):
     rule_score: float
     judge_score: float
     signals: list
+    sub_scores: dict | None
     rationale: str | None
     created_at: str
 
@@ -28,8 +29,8 @@ class ConfidenceOut(BaseModel):
     def of(cls, c: ConfidenceScore) -> "ConfidenceOut":
         return cls(
             score=c.score, band=c.band.value, rule_score=c.rule_score,
-            judge_score=c.judge_score, signals=c.signals or [], rationale=c.rationale,
-            created_at=c.created_at.isoformat(),
+            judge_score=c.judge_score, signals=c.signals or [], sub_scores=c.sub_scores,
+            rationale=c.rationale, created_at=c.created_at.isoformat(),
         )
 
 

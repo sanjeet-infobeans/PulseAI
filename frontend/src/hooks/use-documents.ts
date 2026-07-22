@@ -35,3 +35,11 @@ export function useDeleteDocument(projectId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["documents", projectId] }),
   })
 }
+
+export function useRequirementDrift(projectId: string) {
+  return useQuery({
+    queryKey: ["requirement-drift", projectId],
+    queryFn: () => api.requirements.drift(projectId),
+    enabled: !!projectId,
+  })
+}

@@ -9,6 +9,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Index,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -65,6 +66,9 @@ class Story(Base):
     is_blocked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     blocked_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     labels: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    # Incremented in jira_sync when a re-sync catches a story flip from `done`
+    # back to a non-done category — the requirement-volatility (#5) reopen signal.
+    reopened_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_ext: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     updated_ext: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     resolved_ext: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

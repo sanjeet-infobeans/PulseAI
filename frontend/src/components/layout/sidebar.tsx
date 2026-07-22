@@ -36,7 +36,7 @@ function navGroups(projectId: string | null): NavGroup[] {
         { label: "Ask PulseAI", href: `${p}/chat`, Icon: ChatCircleDots },
         { label: "Documents", href: `${p}/documents`, Icon: FileText },
         { label: "Risk management", href: `${p}/risks`, Icon: WarningCircle },
-        { label: "Resource planning", href: `${p}/resources`, Icon: UsersThree },
+        { label: "Resources", href: `${p}/resources`, Icon: UsersThree },
       ],
     })
   }

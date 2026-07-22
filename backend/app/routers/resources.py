@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.routers.auth import CurrentUser
 from app.routers.projects import _load_project
-from app.services.resource_service import get_resources
+from app.services.resource_service import compute_resource_risk, get_resources
 
 router = APIRouter(tags=["resources"])
 
@@ -17,4 +17,6 @@ async def project_resources(
     project_id: uuid.UUID, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
 ) -> dict:
     await _load_project(db, project_id, user)
-    return await get_resources(db, project_id)
+    roster = await get_resources(db, project_id)
+    risk = await compute_resource_risk(db, project_id, roster)
+    return {**roster, **risk}

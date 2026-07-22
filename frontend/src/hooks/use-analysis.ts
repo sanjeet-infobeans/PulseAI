@@ -21,3 +21,20 @@ export function useRunAnalysis(projectId: string) {
       qc.setQueryData(["analysis", projectId, data.kind], data),
   })
 }
+
+export function useLatestJudgeReview(projectId: string, analysisId: string | undefined) {
+  return useQuery({
+    queryKey: ["judge-review", projectId, analysisId],
+    queryFn: () => api.analysis.latestJudge(projectId, analysisId as string),
+    enabled: !!projectId && !!analysisId,
+  })
+}
+
+export function useRunJudge(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (analysisId: string) => api.analysis.judge(projectId, analysisId),
+    onSuccess: (data) =>
+      qc.setQueryData(["judge-review", projectId, data.analysis_id], data),
+  })
+}

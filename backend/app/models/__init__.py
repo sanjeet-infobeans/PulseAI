@@ -12,6 +12,15 @@ from app.models.confidence import ConfidenceScore, ConfidenceBand
 from app.models.document import Document, DocumentExtraction, DocType, DocStatus
 from app.models.llm_call_log import LLMCallLog, LLMFeature
 from app.models.simulated import SimulatedDataset
+from app.models.metric_snapshot import MetricSnapshot
+from app.models.requirement_item import RequirementItem, RequirementSourceType, RequirementStatus
+from app.models.dependency_edge import DependencyEdge, DependencyRelation
+from app.models.decision_log import DecisionLogEntry, DecisionSource, DecisionStatus
+from app.models.knowledge_map import KnowledgeMapEntry
+from app.models.ai_judge_review import AIJudgeReview
+from app.models.delivery_prediction import DeliveryPrediction
+from app.models.what_if_scenario import WhatIfScenario
+from app.models.project_outcome import ProjectOutcome
 
 __all__ = [
     "Organization",
@@ -44,4 +53,18 @@ __all__ = [
     "LLMCallLog",
     "LLMFeature",
     "SimulatedDataset",
+    "MetricSnapshot",
+    "RequirementItem",
+    "RequirementSourceType",
+    "RequirementStatus",
+    "DependencyEdge",
+    "DependencyRelation",
+    "DecisionLogEntry",
+    "DecisionSource",
+    "DecisionStatus",
+    "KnowledgeMapEntry",
+    "AIJudgeReview",
+    "DeliveryPrediction",
+    "WhatIfScenario",
+    "ProjectOutcome",
 ]

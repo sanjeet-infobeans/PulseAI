@@ -29,6 +29,41 @@ _WEIGHTS = {
     "scope_health": (0.05, True),
 }
 
+# Explainable breakdown (#8): every signal (rule-based + alignment) maps to one
+# of 6 categories. Some categories are single-signal proxies until later
+# phases add dedicated signals (Resource from #7/#12, Customer from #6/#13,
+# Dependencies from #4) — see docs/ai-features-gap-analysis-and-plan.md.
+_CATEGORY_MAP = {
+    "sprint_completion_ratio": "engineering",
+    "velocity_stability": "engineering",
+    "blocked_ratio": "dependencies",
+    "bug_ratio": "testing",
+    "unassigned_ratio": "resource",
+    "overdue_ratio": "customer",
+    "scope_health": "requirement",
+    "requirement_coverage": "requirement",
+    "story_alignment": "requirement",
+    "requirement_volatility": "requirement",
+}
+_CATEGORIES = ["requirement", "engineering", "testing", "dependencies", "resource", "customer"]
+
+
+def _sub_scores(signals: list[dict]) -> dict:
+    buckets: dict[str, list[float]] = {c: [] for c in _CATEGORIES}
+    for s in signals:
+        category = _CATEGORY_MAP.get(s["name"])
+        if not category:
+            continue
+        # Normalize back to a 0-100 "how good is this" score: weighted rule
+        # signals store contribution = weight * normalized * 100; alignment
+        # signals (weight=None) already store a 0-100 pct as contribution.
+        pct = s["contribution"] / s["weight"] if s.get("weight") else s["contribution"]
+        buckets[category].append(max(0.0, min(100.0, pct)))
+    return {
+        category: round(sum(vals) / len(vals), 1) if vals else None
+        for category, vals in buckets.items()
+    }
+
 
 def _band(score: float) -> ConfidenceBand:
     if score < 50:
@@ -143,6 +178,19 @@ async def compute_confidence(
     except Exception:  # noqa: BLE001 — alignment is best-effort
         pass
 
+    # Requirement Volatility (#5) — display-only signal for the sub_scores
+    # breakdown; not factored into rule_score/judge_score/alignment_score so
+    # the overall blend formula stays unchanged.
+    try:
+        from app.services.volatility_service import latest_volatility
+
+        volatility = await latest_volatility(db, project_id)
+        if volatility is not None:
+            signals.append({"name": "requirement_volatility", "value": round(volatility / 100, 3),
+                            "weight": None, "contribution": volatility})
+    except Exception:  # noqa: BLE001 — best-effort
+        pass
+
     # Blend: with a knowledge base, requirement alignment weighs on confidence.
     if alignment_score is not None:
         score = round(0.5 * rule_score + 0.2 * judge_score + 0.3 * alignment_score)
@@ -153,6 +201,7 @@ async def compute_confidence(
         project_id=project_id, sprint_id=sprint_id, score=score, band=_band(score),
         rule_score=rule_score, judge_score=round(judge_score, 1), signals=signals,
         rationale=rationale, model=settings.llm_model_judge,
+        sub_scores=_sub_scores(signals),
     )
     db.add(row)
     await db.commit()

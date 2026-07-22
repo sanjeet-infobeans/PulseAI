@@ -101,6 +101,18 @@ export interface Analysis {
   kind: AnalysisKind
   content: string
   structured: Record<string, unknown>
+  generated_by: string | null
+  created_at: string
+}
+
+export interface JudgeReview {
+  id: string
+  analysis_id: string
+  coverage_pct: number
+  missing_risks_count: number
+  missing_stories_count: number
+  confidence_pct: number
+  notes: string | null
   created_at: string
 }
 
@@ -151,9 +163,17 @@ export type StatusCategory = "todo" | "in_progress" | "blocked" | "in_review" | 
 export interface ConfidenceSignal {
   name: string
   value: number
-  weight: number
+  weight: number | null
   contribution: number
 }
+
+export type ConfidenceCategory =
+  | "requirement"
+  | "engineering"
+  | "testing"
+  | "dependencies"
+  | "resource"
+  | "customer"
 
 export interface ConfidenceData {
   score: number
@@ -161,6 +181,7 @@ export interface ConfidenceData {
   rule_score: number
   judge_score: number
   signals: ConfidenceSignal[]
+  sub_scores: Partial<Record<ConfidenceCategory, number | null>> | null
   rationale: string | null
 }
 
@@ -186,6 +207,41 @@ export interface AlignmentData {
   unmapped_requirements: string[]
   out_of_scope_stories: Array<{ key: string; title: string }>
   summary: string
+}
+
+export interface DependencyEdgeT {
+  id: string
+  from_type: string
+  from_ref: string
+  to_type: string
+  to_ref: string
+  relation: "blocks" | "depends_on" | "mentioned_in" | "derived_from" | "impacts"
+  confidence: number
+  rationale: string | null
+  detected_at: string
+}
+
+export interface RequirementDriftItem {
+  id: string
+  text: string
+  source_type: string
+  first_seen_at: string
+  estimated_effort_sp: number | null
+  risk: "high" | "medium" | "low"
+  rationale: string
+}
+
+export interface DeveloperResource {
+  name: string
+  skill: string
+  utilization_pct: number
+}
+
+export interface KnowledgeMapRow {
+  module: string
+  developer: string
+  story_count: number
+  is_sole_holder: boolean
 }
 
 export interface DashboardData {
@@ -239,6 +295,14 @@ export interface ResourceSummary {
 export interface ResourcesData {
   resources: Resource[]
   summary: ResourceSummary
+  team_size: number | null
+  team_utilization_pct: number | null
+  developers: DeveloperResource[]
+  knowledge_concentration: KnowledgeMapRow[]
+  sole_holder_modules: Array<{ module: string; developer: string; story_count: number }>
+  burnout_risk: "low" | "medium" | "high"
+  burnout_reason: string
+  recommendations: string[]
 }
 
 export interface Story {
