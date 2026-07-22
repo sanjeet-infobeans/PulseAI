@@ -103,7 +103,7 @@ export function SettingsContent({ projectId }: { projectId: string }) {
           <Field label="Project key" value={projectKey} onChange={setProjectKey} placeholder="ATLAS" required />
           <Field label="Board ID" value={boardId} onChange={setBoardId} placeholder="42" required />
           <Field label="Story-point field" value={spField} onChange={setSpField} placeholder="customfield_10016" />
-          <Field label="Token secret ref (env var)" value={secretRef} onChange={setSecretRef} placeholder="JIRA_TOKEN_ATLAS" required />
+          <Field label="Token secret ref (env var)" value={secretRef} onChange={setSecretRef} placeholder="JIRA_TOKEN_ATLAS" required maxLength={128} />
         </div>
         <p className="text-xs text-medium-gray">
           The API token is never stored. Set it as the named environment variable on the server; PulseAI reads it at sync time.
@@ -209,18 +209,19 @@ function OutcomeStat({ label, value }: { label: string; value: string }) {
 }
 
 function Field({
-  label, value, onChange, placeholder, required,
+  label, value, onChange, placeholder, required, maxLength,
 }: {
   label: string
   value: string
   onChange: (v: string) => void
   placeholder?: string
   required?: boolean
+  maxLength?: number
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <Label>{label}</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} required={required} />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} required={required} maxLength={maxLength} />
     </div>
   )
 }
