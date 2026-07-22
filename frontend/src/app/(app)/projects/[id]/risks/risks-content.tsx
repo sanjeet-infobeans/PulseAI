@@ -1,8 +1,8 @@
 "use client"
 
-import { ArrowRight, WarningCircle } from "@phosphor-icons/react"
+import { ArrowRight, Clock, WarningCircle } from "@phosphor-icons/react"
 import { Badge } from "@/components/ui/badge"
-import { useDependencies } from "@/hooks/use-dependencies"
+import { useDecisions, useDependencies } from "@/hooks/use-dependencies"
 
 const RELATION_LABEL: Record<string, string> = {
   blocks: "blocks",
@@ -14,6 +14,7 @@ const RELATION_LABEL: Record<string, string> = {
 
 export function RisksContent({ projectId }: { projectId: string }) {
   const { data: edges, isLoading } = useDependencies(projectId)
+  const { data: decisions } = useDecisions(projectId)
 
   return (
     <div className="space-y-8">
@@ -62,6 +63,49 @@ export function RisksContent({ projectId }: { projectId: string }) {
             </div>
           ))}
         </div>
+      )}
+
+      {decisions && (decisions.pending.length > 0 || decisions.decided_count > 0) && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-headline-md text-charcoal flex items-center gap-2">
+              <Clock size={20} className="text-primary" /> Customer decisions
+            </h2>
+            {decisions.avg_delay_days != null && (
+              <span className="text-sm text-medium-gray">
+                Avg approval delay: <span className="text-charcoal tabular-nums">{decisions.avg_delay_days}d</span>
+              </span>
+            )}
+          </div>
+          {decisions.pending.length === 0 ? (
+            <p className="text-medium-gray text-sm">No decisions currently awaiting approval.</p>
+          ) : (
+            <div className="premium-card rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-medium-gray border-b border-light-gray">
+                    <th className="px-5 py-3 font-normal">Topic</th>
+                    <th className="px-5 py-3 font-normal">Requested by</th>
+                    <th className="px-5 py-3 font-normal">Awaiting</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {decisions.pending.map((p, i) => (
+                    <tr key={i} className="border-b border-light-gray last:border-0">
+                      <td className="px-5 py-3 text-charcoal">{p.topic}</td>
+                      <td className="px-5 py-3 text-medium-gray">{p.requested_by ?? "—"}</td>
+                      <td className="px-5 py-3 tabular-nums">
+                        <Badge variant={(p.days_pending ?? 0) > 7 ? "severity-high" : "severity-med"}>
+                          {p.days_pending != null ? `${p.days_pending}d` : "—"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       )}
     </div>
   )

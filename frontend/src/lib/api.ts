@@ -12,15 +12,20 @@ import type {
   Customer,
   DashboardData,
   DocumentT,
+  DecisionSummary,
   DependencyEdgeT,
   JudgeReview,
   MeOut,
+  PredictionData,
   Project,
   RequirementDriftItem,
   ResourceRiskData,
+  ScopeCreepData,
+  SentimentData,
   Sprint,
   Story,
   TokenOut,
+  WhatIfResult,
 } from "@/types/api"
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
@@ -170,10 +175,23 @@ export const api = {
 
   dashboard: {
     get: (projectId: string) => apiFetch<DashboardData>(`/projects/${projectId}/dashboard`),
+    scopeCreep: (projectId: string) => apiFetch<ScopeCreepData>(`/projects/${projectId}/scope-creep`),
   },
 
   resources: {
     get: (projectId: string) => apiFetch<ResourceRiskData>(`/projects/${projectId}/resources`),
+  },
+
+  sentiment: {
+    get: (projectId: string) => apiFetch<SentimentData>(`/projects/${projectId}/sentiment`),
+  },
+
+  simulation: {
+    run: (projectId: string, scenarioText: string) =>
+      apiFetch<WhatIfResult>(`/projects/${projectId}/simulate`, {
+        method: "POST",
+        body: JSON.stringify({ scenario_text: scenarioText }),
+      }),
   },
 
   requirements: {
@@ -186,6 +204,10 @@ export const api = {
       apiFetch<DependencyEdgeT[]>(`/projects/${projectId}/dependencies`),
   },
 
+  decisions: {
+    get: (projectId: string) => apiFetch<DecisionSummary>(`/projects/${projectId}/decisions`),
+  },
+
   confidence: {
     latest: (projectId: string) =>
       apiFetch<ConfidenceData | null>(`/projects/${projectId}/confidence`),
@@ -193,6 +215,13 @@ export const api = {
       apiFetch<ConfidenceData>(`/projects/${projectId}/confidence/compute`, { method: "POST" }),
     alignment: (projectId: string) =>
       apiFetch<AlignmentData>(`/projects/${projectId}/alignment`, { method: "POST" }),
+  },
+
+  prediction: {
+    latest: (projectId: string) =>
+      apiFetch<PredictionData | null>(`/projects/${projectId}/prediction`),
+    compute: (projectId: string) =>
+      apiFetch<PredictionData>(`/projects/${projectId}/prediction/compute`, { method: "POST" }),
   },
 
   documents: {

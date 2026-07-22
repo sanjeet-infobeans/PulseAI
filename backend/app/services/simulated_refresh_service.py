@@ -7,6 +7,7 @@ row so a real trend accumulates over successive nightly runs.
 """
 import random
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,9 +17,34 @@ from app.models.metric_snapshot import MetricSnapshot
 from app.models.project import Project
 from app.models.simulated import SimulatedDataset
 
+_DECIDERS = ["Customer PM", "Product Owner", "Sponsor"]
+
 
 def _clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
+
+
+def _resolve_pending_decisions(payload: dict) -> dict:
+    """Customer Decision Delay (#6): ages the simulated Teams pending_decisions
+    forward — a decision requested >10 days ago has a 40% chance per nightly
+    run of getting approved, so a real (if synthetic) delay accumulates for
+    decision_service.py to measure rather than staying pending forever."""
+    now = datetime.now(timezone.utc)
+    resolved = []
+    for pd in payload.get("pending_decisions", []):
+        pd = dict(pd)
+        if pd.get("status") == "pending" and pd.get("requested_at"):
+            try:
+                requested_at = datetime.fromisoformat(str(pd["requested_at"]).replace("Z", "+00:00"))
+            except ValueError:
+                requested_at = None
+            if requested_at and now - requested_at > timedelta(days=10) and random.random() < 0.4:
+                pd["status"] = "approved"
+                pd["decided_at"] = now.isoformat()
+                pd["decided_by"] = random.choice(_DECIDERS)
+        resolved.append(pd)
+    payload["pending_decisions"] = resolved
+    return payload
 
 
 async def _refresh_project(db: AsyncSession, project_id: uuid.UUID) -> None:
@@ -50,6 +76,10 @@ async def _refresh_project(db: AsyncSession, project_id: uuid.UUID) -> None:
             slip = max(0.0, float(payload.get("slip_days", 0)) + random.uniform(-1, 2))
             payload["slip_days"] = round(slip, 1)
             metric_key, value = "timeline_slip_days", slip
+        elif row.source == ConnectorType.teams:
+            payload = _resolve_pending_decisions(payload)
+            row.payload = payload
+            continue  # no scalar trend for this source
 
         if metric_key is None:
             continue
@@ -60,6 +90,9 @@ async def _refresh_project(db: AsyncSession, project_id: uuid.UUID) -> None:
         ))
 
     await db.commit()
+
+    from app.services.decision_service import sync_decision_log
+    await sync_decision_log(db, project_id)
 
 
 async def refresh_all_projects(db: AsyncSession) -> None:

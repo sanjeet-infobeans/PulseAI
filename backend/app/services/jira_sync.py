@@ -62,6 +62,7 @@ async def _enqueue_recompute(project_id: uuid.UUID) -> None:
     await pool.enqueue_job("append_scope_snapshot", pid)
     await pool.enqueue_job("recompute_knowledge_map", pid)
     await pool.enqueue_job("recompute_confidence", pid)
+    await pool.enqueue_job("recompute_prediction", pid)
 
 
 async def _persist(db, connector: Connector, bundle: NormalizedBundle) -> None:

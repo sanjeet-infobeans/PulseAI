@@ -14,8 +14,8 @@ import app.models  # noqa: F401  ensure models are registered
 from app.queue import close_arq_pool
 from app.redis import close_redis, get_redis
 from app.routers import (
-    analysis, auth, chat, confidence, connectors, customers, dashboard, dependencies, documents,
-    projects, resources,
+    analysis, auth, chat, confidence, connectors, customers, dashboard, decisions, dependencies,
+    documents, prediction, projects, resources, sentiment, simulation,
 )
 from app.seed_data import seed_data
 
@@ -69,6 +69,10 @@ app.include_router(confidence.router)
 app.include_router(dashboard.router)
 app.include_router(resources.router)
 app.include_router(dependencies.router)
+app.include_router(decisions.router)
+app.include_router(prediction.router)
+app.include_router(sentiment.router)
+app.include_router(simulation.router)
 
 
 @app.get("/healthz", tags=["health"])

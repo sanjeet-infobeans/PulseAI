@@ -37,6 +37,7 @@ function navGroups(projectId: string | null): NavGroup[] {
         { label: "Documents", href: `${p}/documents`, Icon: FileText },
         { label: "Risk management", href: `${p}/risks`, Icon: WarningCircle },
         { label: "Resource risk", href: `${p}/resources`, Icon: UsersThree },
+        { label: "Sentiment", href: `${p}/sentiment`, Icon: Gauge },
       ],
     })
   }

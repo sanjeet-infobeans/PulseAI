@@ -77,6 +77,22 @@ async def detect_dependencies(ctx, project_id: str) -> None:
         await _run(db, uuid.UUID(project_id))
 
 
+async def recompute_prediction(ctx, project_id: str) -> None:
+    from app.database import AsyncSessionLocal
+    from app.services.prediction_service import predict_completion
+
+    async with AsyncSessionLocal() as db:
+        await predict_completion(db, uuid.UUID(project_id))
+
+
+async def compute_requirement_volatility(ctx, project_id: str) -> None:
+    from app.database import AsyncSessionLocal
+    from app.services.volatility_service import compute_volatility
+
+    async with AsyncSessionLocal() as db:
+        await compute_volatility(db, uuid.UUID(project_id))
+
+
 async def generate_executive_briefing(ctx, project_id: str) -> None:
     from app.database import AsyncSessionLocal
     from app.services.analysis_service import generate_executive_briefing as _run
@@ -110,6 +126,7 @@ async def nightly_all_projects(ctx) -> None:
         await pool.enqueue_job("detect_dependencies", str(pid))
         await pool.enqueue_job("recompute_knowledge_map", str(pid))
         await pool.enqueue_job("generate_executive_briefing", str(pid))
+        await pool.enqueue_job("compute_requirement_volatility", str(pid))
 
 
 class WorkerSettings:
@@ -122,6 +139,8 @@ class WorkerSettings:
         sync_requirement_catalog,
         detect_dependencies,
         generate_executive_briefing,
+        recompute_prediction,
+        compute_requirement_volatility,
         refresh_simulated_signals,
         nightly_all_projects,
     ]

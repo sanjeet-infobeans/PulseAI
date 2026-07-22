@@ -3,11 +3,12 @@
 import { useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import { CheckCircle, Sparkle, WarningCircle } from "@phosphor-icons/react"
+import { CheckCircle, MagicWand, Sparkle, WarningCircle } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { useLatestAnalysis, useLatestJudgeReview, useRunAnalysis, useRunJudge } from "@/hooks/use-analysis"
+import { useRunSimulation } from "@/hooks/use-simulation"
 import { fmtRelative } from "@/lib/utils"
 import type { AnalysisKind } from "@/types/api"
 
@@ -43,7 +44,67 @@ export function AnalysisContent({ projectId }: { projectId: string }) {
           </TabsContent>
         ))}
       </Tabs>
+
+      <WhatIfPanel projectId={projectId} />
     </div>
+  )
+}
+
+function WhatIfPanel({ projectId }: { projectId: string }) {
+  const [scenario, setScenario] = useState("")
+  const simulate = useRunSimulation(projectId)
+
+  return (
+    <section className="premium-card rounded-xl p-8 border-t-4 border-t-primary space-y-4">
+      <p className="eyebrow flex items-center gap-2"><MagicWand size={16} /> What-if simulation</p>
+      <div className="flex gap-3">
+        <input
+          value={scenario}
+          onChange={(e) => setScenario(e.target.value)}
+          placeholder="e.g. What if we add a Payment Gateway integration?"
+          className="flex-1 rounded-sm border border-light-gray px-3 py-2 text-sm bg-background focus:outline-none focus:border-primary"
+        />
+        <Button
+          onClick={() => simulate.mutate(scenario)}
+          disabled={simulate.isPending || !scenario.trim()}
+        >
+          <Sparkle size={16} className={simulate.isPending ? "animate-pulse" : ""} />
+          {simulate.isPending ? "Simulating…" : "Simulate"}
+        </Button>
+      </div>
+
+      {simulate.data && (
+        <div className="pt-4 border-t border-light-gray space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs text-medium-gray">Estimated time</p>
+              <p className="text-headline-md text-charcoal tabular-nums mt-1">
+                {simulate.data.estimated_weeks != null ? `${simulate.data.estimated_weeks}w` : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-medium-gray">Risk</p>
+              <Badge variant={simulate.data.risk === "high" ? "severity-high" : simulate.data.risk === "medium" ? "severity-med" : "severity-low"}>
+                {simulate.data.risk}
+              </Badge>
+            </div>
+            <div>
+              <p className="text-xs text-medium-gray">Confidence impact</p>
+              <p className={`text-headline-md tabular-nums mt-1 ${simulate.data.confidence_delta < 0 ? "text-primary" : "text-charcoal"}`}>
+                {simulate.data.confidence_delta > 0 ? "+" : ""}{simulate.data.confidence_delta}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-medium-gray">Resources needed</p>
+              <p className="text-sm text-charcoal mt-1">
+                {simulate.data.resources_needed.length > 0 ? simulate.data.resources_needed.join(", ") : "—"}
+              </p>
+            </div>
+          </div>
+          {simulate.data.summary && <p className="text-sm text-medium-gray">{simulate.data.summary}</p>}
+        </div>
+      )}
+    </section>
   )
 }
 

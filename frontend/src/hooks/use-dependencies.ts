@@ -10,3 +10,11 @@ export function useDependencies(projectId: string) {
     enabled: !!projectId,
   })
 }
+
+export function useDecisions(projectId: string) {
+  return useQuery({
+    queryKey: ["decisions", projectId],
+    queryFn: () => api.decisions.get(projectId),
+    enabled: !!projectId,
+  })
+}

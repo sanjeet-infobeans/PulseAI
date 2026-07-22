@@ -209,6 +209,70 @@ export interface AlignmentData {
   summary: string
 }
 
+export interface WhatIfResult {
+  id: string
+  scenario_text: string
+  estimated_weeks: number | null
+  resources_needed: string[]
+  risk: "low" | "medium" | "high"
+  confidence_delta: number
+  summary: string | null
+  created_at: string
+}
+
+export interface SentimentData {
+  current_score: number | null
+  trend: "improving" | "steady" | "declining"
+  series: number[]
+  reasons: string[]
+  history_points: number
+}
+
+export interface PredictionData {
+  predicted_completion_date: string | null
+  baseline_target_date: string | null
+  probability_on_time: number
+  confidence_pct: number
+  reasons: string[]
+  recommendations: string[]
+  created_at: string
+}
+
+export interface ScopeCreepData {
+  scope_growth_pct: number
+  new_stories_added: number
+  requirements_tracked: number
+  customer_decisions: number
+  baseline_points: number | null
+  current_points: number | null
+  has_baseline: boolean
+  risk_level: "low" | "medium" | "high"
+  estimated_schedule_impact_weeks: number
+  estimated_cost_impact_note: string
+  summary: string
+}
+
+export interface DecisionSummary {
+  avg_delay_days: number | null
+  decided_count: number
+  pending: Array<{
+    topic: string
+    requested_by: string | null
+    requested_at: string | null
+    days_pending: number | null
+  }>
+  decisions: Array<{
+    topic: string
+    status: "pending" | "approved" | "rejected"
+    source: string
+    requested_at: string | null
+    decided_at: string | null
+    requested_by: string | null
+    decided_by: string | null
+    sprint_impact_days: number | null
+  }>
+}
+
 export interface DependencyEdgeT {
   id: string
   from_type: string

@@ -81,6 +81,7 @@ async def process_document(document_id: uuid.UUID, content: bytes, mime: str | N
             from app.queue import get_arq_pool
             pool = await get_arq_pool()
             await pool.enqueue_job("sync_requirement_catalog", str(doc.project_id))
+            await pool.enqueue_job("sync_decision_log", str(doc.project_id))
         except HTTPException as exc:
             await db.rollback()
             doc.status = DocStatus.error
