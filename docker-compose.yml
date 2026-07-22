@@ -62,6 +62,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Runs `arq`, not uvicorn — the image's HEALTHCHECK (HTTP :8000/healthz)
+    # doesn't apply here since nothing listens on that port in this container.
+    healthcheck:
+      disable: true
 
   frontend:
     build:

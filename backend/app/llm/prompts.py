@@ -247,6 +247,96 @@ def judge_review_messages(analysis_kind: str, analysis_content: str, analysis_st
     ]
 
 
+def completion_prediction_messages(context: dict, rule_projection: dict, signals: list[dict]) -> list[dict]:
+    """Delivery Completion Prediction (#1): same rule+LLM-judge blend pattern
+    as confidence_service.py — the rule side already computed a projected
+    date from velocity trend; the LLM reasons about probability/likely
+    causes/recommendations on top of that projection."""
+    return [
+        {"role": "system", "content": (
+            SYSTEM + " You assess whether a project will hit its target delivery date, given a "
+            "rule-based velocity projection. Respond with strict JSON only."
+        )},
+        {"role": "user", "content": (
+            f"Delivery data (JSON):\n{json.dumps(context, default=str)}\n\n"
+            f"Rule-based projection (JSON):\n{json.dumps(rule_projection, default=str)}\n\n"
+            f"Signals (JSON):\n{json.dumps(signals, default=str)}\n\n"
+            'Return strict JSON: {"probability_on_time": number (0-100), '
+            '"reasons": [string] (2-4 concrete reasons, cite numbers), '
+            '"recommendations": [string] (1-3 concrete actions to protect the date)}'
+        )},
+    ]
+
+
+def scope_creep_messages(context: dict, scope_metrics: dict) -> list[dict]:
+    """Scope Creep Detection (#2): turn the measured scope-growth signals
+    (story/point deltas since baseline, new requirements, customer decisions)
+    into an estimated schedule/cost impact. The metrics themselves are
+    computed, not invented — only the impact estimate is LLM reasoning."""
+    return [
+        {"role": "system", "content": (
+            SYSTEM + " You estimate the schedule and cost impact of measured scope growth. Be "
+            "conservative and explicit that these are estimates. Respond with strict JSON only."
+        )},
+        {"role": "user", "content": (
+            f"Delivery data (JSON):\n{json.dumps(context, default=str)}\n\n"
+            f"Measured scope-growth metrics (JSON):\n{json.dumps(scope_metrics, default=str)}\n\n"
+            'Return strict JSON: {"risk_level": "low|medium|high", '
+            '"estimated_schedule_impact_weeks": number, "estimated_cost_impact_note": string '
+            '(a rough estimate framed in relative terms, e.g. "~2-3 additional sprints of effort" — '
+            "do not invent a specific currency figure), "
+            '"summary": string (1-2 sentences)}'
+        )},
+    ]
+
+
+def sentiment_analysis_messages(context: dict, sentiment_trend: list[dict], simulated: dict) -> list[dict]:
+    """Stakeholder Sentiment (#13): reasons over the trend (from
+    metric_snapshots, refreshed nightly by simulated_refresh_service) plus
+    Teams/Slack simulated highlights and transcript decisions, rather than
+    just echoing the static seeded `note` field."""
+    return [
+        {"role": "system", "content": (
+            SYSTEM + " You analyze stakeholder sentiment trend and explain what's driving it. "
+            "Respond with strict JSON only."
+        )},
+        {"role": "user", "content": (
+            f"Delivery data (JSON):\n{json.dumps(context, default=str)}\n\n"
+            f"Sentiment score history, oldest to newest (JSON):\n{json.dumps(sentiment_trend, default=str)}\n\n"
+            f"Simulated Teams/Slack signals (JSON):\n{json.dumps(simulated, default=str)}\n\n"
+            'Return strict JSON: {"trend": "improving|steady|declining", '
+            '"reasons": [string] (concrete, e.g. delayed approvals, repeated bug discussion, '
+            'escalation keywords, blockers) — empty list if genuinely steady with no notable driver}'
+        )},
+    ]
+
+
+def what_if_messages(
+    context: dict, baseline_confidence: dict | None, baseline_prediction: dict | None, scenario_text: str
+) -> list[dict]:
+    """What-If Simulation (#14): LLM-only reasoning (no solver/optimizer) —
+    estimate the delta a hypothetical scope change would have against the
+    project's current baseline confidence/prediction."""
+    return [
+        {"role": "system", "content": (
+            SYSTEM + " A stakeholder is asking a what-if question about adding scope. Estimate the "
+            "impact against the given baseline. Be conservative and explicit these are estimates, "
+            "grounded in the team's current velocity/confidence, not invented precision. "
+            "Respond with strict JSON only."
+        )},
+        {"role": "user", "content": (
+            f"Delivery data (JSON):\n{json.dumps(context, default=str)}\n\n"
+            f"Baseline confidence (JSON, may be null):\n{json.dumps(baseline_confidence, default=str)}\n\n"
+            f"Baseline delivery prediction (JSON, may be null):\n{json.dumps(baseline_prediction, default=str)}\n\n"
+            f"Scenario: {scenario_text}\n\n"
+            'Return strict JSON: {"estimated_weeks": number, "estimated_resources": [string] '
+            '(e.g. "1 Backend developer"), "risk": "low|medium|high", '
+            '"confidence_delta": number (negative if this scenario would lower delivery confidence), '
+            '"summary": string (2-3 sentences)}'
+        )},
+    ]
+
+
 _DOC_TASK = {
     "brd": (
         'Analyze this Business Requirements Document. Return strict JSON: '
@@ -255,7 +345,11 @@ _DOC_TASK = {
     ),
     "transcript": (
         'Analyze this meeting transcript. Return strict JSON: '
-        '{"summary":str,"decisions":[str],"action_items":[{"owner":str,"item":str}],"risks":[str]}'
+        '{"summary":str,"decisions":[str],"action_items":[{"owner":str,"item":str}],"risks":[str],'
+        '"decision_events":[{"topic":str,"requested_at":str|null,"decided_at":str|null,'
+        '"status":"pending|approved|rejected","requested_by":str|null,"decided_by":str|null}]}. '
+        "decision_events is for customer/stakeholder decisions specifically (not internal team choices) "
+        "— include dates only if explicitly mentioned in the transcript (ISO format), else null."
     ),
     "change_request": (
         'Analyze this change request. Return strict JSON: '

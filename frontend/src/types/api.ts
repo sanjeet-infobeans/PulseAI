@@ -163,7 +163,7 @@ export type StatusCategory = "todo" | "in_progress" | "blocked" | "in_review" | 
 export interface ConfidenceSignal {
   name: string
   value: number
-  weight: number
+  weight: number | null
   contribution: number
 }
 

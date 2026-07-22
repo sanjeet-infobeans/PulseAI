@@ -43,6 +43,7 @@ _CATEGORY_MAP = {
     "scope_health": "requirement",
     "requirement_coverage": "requirement",
     "story_alignment": "requirement",
+    "requirement_volatility": "requirement",
 }
 _CATEGORIES = ["requirement", "engineering", "testing", "dependencies", "resource", "customer"]
 
@@ -175,6 +176,19 @@ async def compute_confidence(
                 + (rationale or "")
             ).strip()
     except Exception:  # noqa: BLE001 — alignment is best-effort
+        pass
+
+    # Requirement Volatility (#5) — display-only signal for the sub_scores
+    # breakdown; not factored into rule_score/judge_score/alignment_score so
+    # the overall blend formula stays unchanged.
+    try:
+        from app.services.volatility_service import latest_volatility
+
+        volatility = await latest_volatility(db, project_id)
+        if volatility is not None:
+            signals.append({"name": "requirement_volatility", "value": round(volatility / 100, 3),
+                            "weight": None, "contribution": volatility})
+    except Exception:  # noqa: BLE001 — best-effort
         pass
 
     # Blend: with a knowledge base, requirement alignment weighs on confidence.
