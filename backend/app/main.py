@@ -11,9 +11,11 @@ from sqlalchemy import text
 from app.config import settings
 from app.database import engine, get_db
 import app.models  # noqa: F401  ensure models are registered
+from app.queue import close_arq_pool
 from app.redis import close_redis, get_redis
 from app.routers import (
-    analysis, auth, chat, confidence, connectors, customers, dashboard, documents, projects,
+    analysis, auth, chat, confidence, connectors, customers, dashboard, dependencies, documents,
+    projects, resources,
 )
 from app.seed_data import seed_data
 
@@ -38,6 +40,7 @@ async def lifespan(app: FastAPI):
     yield
     await engine.dispose()
     await close_redis()
+    await close_arq_pool()
 
 
 app = FastAPI(
@@ -64,6 +67,8 @@ app.include_router(chat.router)
 app.include_router(documents.router)
 app.include_router(confidence.router)
 app.include_router(dashboard.router)
+app.include_router(resources.router)
+app.include_router(dependencies.router)
 
 
 @app.get("/healthz", tags=["health"])

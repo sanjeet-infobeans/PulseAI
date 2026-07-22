@@ -101,6 +101,18 @@ export interface Analysis {
   kind: AnalysisKind
   content: string
   structured: Record<string, unknown>
+  generated_by: string | null
+  created_at: string
+}
+
+export interface JudgeReview {
+  id: string
+  analysis_id: string
+  coverage_pct: number
+  missing_risks_count: number
+  missing_stories_count: number
+  confidence_pct: number
+  notes: string | null
   created_at: string
 }
 
@@ -155,12 +167,21 @@ export interface ConfidenceSignal {
   contribution: number
 }
 
+export type ConfidenceCategory =
+  | "requirement"
+  | "engineering"
+  | "testing"
+  | "dependencies"
+  | "resource"
+  | "customer"
+
 export interface ConfidenceData {
   score: number
   band: "red" | "amber" | "green"
   rule_score: number
   judge_score: number
   signals: ConfidenceSignal[]
+  sub_scores: Partial<Record<ConfidenceCategory, number | null>> | null
   rationale: string | null
 }
 
@@ -186,6 +207,54 @@ export interface AlignmentData {
   unmapped_requirements: string[]
   out_of_scope_stories: Array<{ key: string; title: string }>
   summary: string
+}
+
+export interface DependencyEdgeT {
+  id: string
+  from_type: string
+  from_ref: string
+  to_type: string
+  to_ref: string
+  relation: "blocks" | "depends_on" | "mentioned_in" | "derived_from" | "impacts"
+  confidence: number
+  rationale: string | null
+  detected_at: string
+}
+
+export interface RequirementDriftItem {
+  id: string
+  text: string
+  source_type: string
+  first_seen_at: string
+  estimated_effort_sp: number | null
+  risk: "high" | "medium" | "low"
+  rationale: string
+}
+
+export interface DeveloperResource {
+  name: string
+  skill: string
+  experience_yrs: number
+  availability_pct: number
+  utilization_pct: number
+}
+
+export interface KnowledgeMapRow {
+  module: string
+  developer: string
+  story_count: number
+  is_sole_holder: boolean
+}
+
+export interface ResourceRiskData {
+  team_size: number | null
+  team_utilization_pct: number | null
+  developers: DeveloperResource[]
+  knowledge_concentration: KnowledgeMapRow[]
+  sole_holder_modules: Array<{ module: string; developer: string; story_count: number }>
+  burnout_risk: "low" | "medium" | "high"
+  burnout_reason: string
+  recommendations: string[]
 }
 
 export interface DashboardData {

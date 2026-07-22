@@ -2,12 +2,57 @@
 
 import { Sparkle } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
-import type { ConfidenceData } from "@/types/api"
+import type { ConfidenceCategory, ConfidenceData } from "@/types/api"
 
 const BAND = {
   green: { color: "#2F674F", label: "On track" },
   amber: { color: "#B07A1E", label: "Watch" },
   red: { color: "#EA1B3D", label: "At risk" },
+}
+
+function bandColor(pct: number): string {
+  if (pct >= 75) return BAND.green.color
+  if (pct >= 50) return BAND.amber.color
+  return BAND.red.color
+}
+
+const CATEGORY_LABEL: Record<ConfidenceCategory, string> = {
+  requirement: "Requirement",
+  engineering: "Engineering",
+  testing: "Testing",
+  dependencies: "Dependencies",
+  resource: "Resource",
+  customer: "Customer",
+}
+const CATEGORY_ORDER: ConfidenceCategory[] = [
+  "requirement", "engineering", "testing", "dependencies", "resource", "customer",
+]
+
+function SubScoreGrid({ subScores }: { subScores: ConfidenceData["sub_scores"] }) {
+  if (!subScores) return null
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-3 mt-4">
+      {CATEGORY_ORDER.map((cat) => {
+        const pct = subScores[cat]
+        return (
+          <div key={cat}>
+            <div className="flex justify-between items-baseline">
+              <span className="text-xs text-medium-gray">{CATEGORY_LABEL[cat]}</span>
+              <span className="text-xs text-charcoal tabular-nums">{pct == null ? "—" : Math.round(pct)}</span>
+            </div>
+            <div className="h-1 w-full bg-light-gray rounded-full overflow-hidden mt-1">
+              {pct != null && (
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${Math.min(Math.max(pct, 0), 100)}%`, background: bandColor(pct) }}
+                />
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 export function ConfidenceMeter({
@@ -61,6 +106,7 @@ export function ConfidenceMeter({
       {confidence.rationale && (
         <p className="text-xs text-medium-gray mt-2 line-clamp-3">{confidence.rationale}</p>
       )}
+      <SubScoreGrid subScores={confidence.sub_scores} />
     </div>
   )
 }

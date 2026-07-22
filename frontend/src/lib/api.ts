@@ -12,8 +12,12 @@ import type {
   Customer,
   DashboardData,
   DocumentT,
+  DependencyEdgeT,
+  JudgeReview,
   MeOut,
   Project,
+  RequirementDriftItem,
+  ResourceRiskData,
   Sprint,
   Story,
   TokenOut,
@@ -146,6 +150,10 @@ export const api = {
       ),
     latest: (projectId: string, kind: AnalysisKind) =>
       apiFetch<Analysis | null>(`/projects/${projectId}/analysis/${kind}`),
+    judge: (projectId: string, analysisId: string) =>
+      apiFetch<JudgeReview>(`/projects/${projectId}/analysis/${analysisId}/judge`, { method: "POST" }),
+    latestJudge: (projectId: string, analysisId: string) =>
+      apiFetch<JudgeReview | null>(`/projects/${projectId}/analysis/${analysisId}/judge`),
   },
 
   chat: {
@@ -162,6 +170,20 @@ export const api = {
 
   dashboard: {
     get: (projectId: string) => apiFetch<DashboardData>(`/projects/${projectId}/dashboard`),
+  },
+
+  resources: {
+    get: (projectId: string) => apiFetch<ResourceRiskData>(`/projects/${projectId}/resources`),
+  },
+
+  requirements: {
+    drift: (projectId: string) =>
+      apiFetch<RequirementDriftItem[]>(`/projects/${projectId}/requirements/drift`),
+  },
+
+  dependencies: {
+    list: (projectId: string) =>
+      apiFetch<DependencyEdgeT[]>(`/projects/${projectId}/dependencies`),
   },
 
   confidence: {

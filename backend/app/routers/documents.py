@@ -13,6 +13,7 @@ from app.models.document import Document, DocStatus, DocType
 from app.routers.auth import CurrentUser
 from app.routers.projects import _load_project
 from app.services.document_service import detect_doc_type, process_document
+from app.services.requirement_service import get_requirement_drift
 from app.storage import supabase_storage
 
 router = APIRouter(tags=["documents"])
@@ -106,6 +107,14 @@ async def upload_document(
 
     background.add_task(process_document, doc.id, content, file.content_type, doc.filename)
     return DocumentOut.of(doc)
+
+
+@router.get("/projects/{project_id}/requirements/drift")
+async def requirement_drift(
+    project_id: uuid.UUID, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
+) -> list[dict]:
+    await _load_project(db, project_id, user)
+    return await get_requirement_drift(db, project_id)
 
 
 @router.delete("/documents/{document_id}", status_code=204)
