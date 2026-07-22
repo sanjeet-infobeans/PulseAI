@@ -209,6 +209,29 @@ export interface AlignmentData {
   summary: string
 }
 
+export interface PortfolioData {
+  projects: Array<{
+    project_id: string
+    name: string
+    customer_name: string
+    confidence_score: number | null
+    band: "red" | "amber" | "green" | null
+    scope_growth_pct: number | null
+  }>
+  needing_attention_count: number
+  most_common_blocker: string | null
+  avg_scope_growth_pct: number | null
+  highest_risk_customer: string | null
+}
+
+export interface ProjectOutcome {
+  actual_duration_days: number | null
+  actual_velocity_avg: number | null
+  defect_density: number | null
+  delivered_on_time: boolean | null
+  closed_at: string | null
+}
+
 export interface WhatIfResult {
   id: string
   scenario_text: string

@@ -10,8 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.customer import Customer
 from app.models.project import Project, ProjectStatus
+from app.models.project_outcome import ProjectOutcome
 from app.models.user import User, UserRole
 from app.routers.auth import CurrentUser, require_super_admin
+from app.services.outcome_service import get_outcome, mark_project_outcome
 
 router = APIRouter(tags=["projects"])
 
@@ -112,3 +114,43 @@ async def create_project(
     await db.commit()
     await db.refresh(project)
     return ProjectOut.of(project)
+
+
+class OutcomeIn(BaseModel):
+    delivered_on_time: bool
+
+
+class OutcomeOut(BaseModel):
+    actual_duration_days: int | None
+    actual_velocity_avg: float | None
+    defect_density: float | None
+    delivered_on_time: bool | None
+    closed_at: str | None
+
+    @classmethod
+    def of(cls, o: ProjectOutcome) -> "OutcomeOut":
+        return cls(
+            actual_duration_days=o.actual_duration_days, actual_velocity_avg=o.actual_velocity_avg,
+            defect_density=o.defect_density, delivered_on_time=o.delivered_on_time,
+            closed_at=o.closed_at.isoformat() if o.closed_at else None,
+        )
+
+
+@router.post("/projects/{project_id}/outcome", response_model=OutcomeOut)
+async def mark_outcome(
+    project_id: uuid.UUID, body: OutcomeIn,
+    user: Annotated[User, Depends(require_super_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> OutcomeOut:
+    await _load_project(db, project_id, user)
+    outcome = await mark_project_outcome(db, project_id, body.delivered_on_time)
+    return OutcomeOut.of(outcome)
+
+
+@router.get("/projects/{project_id}/outcome", response_model=OutcomeOut | None)
+async def get_project_outcome(
+    project_id: uuid.UUID, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
+) -> OutcomeOut | None:
+    await _load_project(db, project_id, user)
+    outcome = await get_outcome(db, project_id)
+    return OutcomeOut.of(outcome) if outcome else None

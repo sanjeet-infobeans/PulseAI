@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { fmtRelative } from "@/lib/utils"
-import { useProject } from "@/hooks/use-projects"
+import { isSuperAdmin, useCurrentUser } from "@/lib/auth"
+import { useProject, useProjectOutcome, useMarkProjectOutcome } from "@/hooks/use-projects"
 import {
   jiraConnector,
   useAssignConnector,
@@ -29,6 +30,9 @@ export function SettingsContent({ projectId }: { projectId: string }) {
   const { data: project } = useProject(projectId)
   const { data: connectors } = useConnectors(projectId)
   const jira = jiraConnector(connectors)
+  const user = useCurrentUser()
+  const { data: outcome } = useProjectOutcome(projectId)
+  const markOutcome = useMarkProjectOutcome(projectId)
 
   const assign = useAssignConnector(projectId)
   const test = useTestConnector(projectId)
@@ -154,6 +158,52 @@ export function SettingsContent({ projectId }: { projectId: string }) {
           </Button>
         </div>
       )}
+
+      {isSuperAdmin(user?.role) && (
+        <div className="premium-card rounded-xl p-8 border-l-4 border-l-medium-gray">
+          <h3 className="text-headline-md text-charcoal">Delivery outcome</h3>
+          <p className="text-medium-gray text-sm mt-1">
+            Marking a project complete records its outcome — the corpus future organizational-intelligence
+            features (Delivery DNA) will draw on once enough projects have closed.
+          </p>
+          {outcome?.closed_at ? (
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <OutcomeStat label="Duration" value={outcome.actual_duration_days != null ? `${outcome.actual_duration_days}d` : "—"} />
+              <OutcomeStat label="Avg velocity" value={outcome.actual_velocity_avg != null ? String(outcome.actual_velocity_avg) : "—"} />
+              <OutcomeStat label="Defect density" value={outcome.defect_density != null ? `${Math.round(outcome.defect_density * 100)}%` : "—"} />
+              <OutcomeStat label="On time" value={outcome.delivered_on_time ? "Yes" : "No"} />
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={markOutcome.isPending}
+                onClick={() => markOutcome.mutate(true)}
+              >
+                {markOutcome.isPending ? "Saving…" : "Mark complete — delivered on time"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={markOutcome.isPending}
+                onClick={() => markOutcome.mutate(false)}
+              >
+                Mark complete — delivered late
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function OutcomeStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-medium-gray">{label}</p>
+      <p className="text-headline-md text-charcoal tabular-nums mt-1">{value}</p>
     </div>
   )
 }

@@ -16,8 +16,10 @@ import type {
   DependencyEdgeT,
   JudgeReview,
   MeOut,
+  PortfolioData,
   PredictionData,
   Project,
+  ProjectOutcome,
   RequirementDriftItem,
   ResourceRiskData,
   ScopeCreepData,
@@ -112,6 +114,13 @@ export const api = {
         method: "POST",
         body: JSON.stringify(body),
       }),
+    getOutcome: (projectId: string) =>
+      apiFetch<ProjectOutcome | null>(`/projects/${projectId}/outcome`),
+    markOutcome: (projectId: string, deliveredOnTime: boolean) =>
+      apiFetch<ProjectOutcome>(`/projects/${projectId}/outcome`, {
+        method: "POST",
+        body: JSON.stringify({ delivered_on_time: deliveredOnTime }),
+      }),
   },
 
   connectors: {
@@ -192,6 +201,10 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ scenario_text: scenarioText }),
       }),
+  },
+
+  portfolio: {
+    get: () => apiFetch<PortfolioData>(`/portfolio`),
   },
 
   requirements: {
