@@ -4,12 +4,79 @@ Payloads are inline (not files) so seeding works identically in Docker and dev.
 Idempotent: skips a source that already has a row.
 """
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.connector import ConnectorType
 from app.models.simulated import SimulatedDataset
+
+
+def _resource_payload(now: datetime) -> dict:
+    """Team roster is date-relative (planned leaves) so it stays a meaningful
+    demo no matter when this is seeded — see seed_demo_delivery.py for the
+    same convention applied to sprint dates."""
+
+    def _leave(leave_id: str, leave_type: str, start_in_days: int, days: int) -> dict:
+        start = now + timedelta(days=start_in_days)
+        end = start + timedelta(days=days - 1)
+        return {
+            "leave_id": leave_id,
+            "leave_type": leave_type,
+            "start_date": start.date().isoformat(),
+            "end_date": end.date().isoformat(),
+            "total_days": days,
+            "status": "Approved",
+        }
+
+    return {
+        "resources": [
+            {
+                "resource_id": "RES-001", "employee_code": "EMP001", "name": "John Smith",
+                "designation": "Technical Lead", "email": "john.smith@company.com",
+                "allocation_percentage": 100, "billable": True,
+                "skills": ["React", "FastAPI", "Architecture"],
+                "planned_leaves": [_leave("LV-1001", "Vacation", 18, 3)],
+            },
+            {
+                "resource_id": "RES-002", "employee_code": "EMP002", "name": "Sarah Wilson",
+                "designation": "Frontend Developer", "email": "sarah.wilson@company.com",
+                "allocation_percentage": 100, "billable": True,
+                "skills": ["Next.js", "TypeScript", "Tailwind CSS"],
+                "planned_leaves": [_leave("LV-1002", "Personal Leave", 25, 2)],
+            },
+            {
+                "resource_id": "RES-003", "employee_code": "EMP003", "name": "Michael Brown",
+                "designation": "Backend Developer", "email": "michael.brown@company.com",
+                "allocation_percentage": 80, "billable": True,
+                "skills": ["Python", "FastAPI", "PostgreSQL"],
+                "planned_leaves": [],
+            },
+            {
+                "resource_id": "RES-004", "employee_code": "EMP004", "name": "Emma Davis",
+                "designation": "QA Engineer", "email": "emma.davis@company.com",
+                "allocation_percentage": 100, "billable": True,
+                "skills": ["Manual Testing", "Automation", "Playwright"],
+                "planned_leaves": [_leave("LV-1003", "Medical Leave", 22, 2)],
+            },
+            {
+                "resource_id": "RES-005", "employee_code": "EMP005", "name": "David Miller",
+                "designation": "UI/UX Designer", "email": "david.miller@company.com",
+                "allocation_percentage": 60, "billable": True,
+                "skills": ["Figma", "UX", "Design System"],
+                "planned_leaves": [],
+            },
+            {
+                "resource_id": "RES-006", "employee_code": "EMP006", "name": "Sophia Taylor",
+                "designation": "DevOps Engineer", "email": "sophia.taylor@company.com",
+                "allocation_percentage": 40, "billable": True,
+                "skills": ["Docker", "Railway", "Vercel", "CI/CD"],
+                "planned_leaves": [_leave("LV-1004", "Vacation", 27, 5)],
+            },
+        ],
+    }
+
 
 _PAYLOADS: dict[ConnectorType, dict] = {
     ConnectorType.teams: {
@@ -25,15 +92,6 @@ _PAYLOADS: dict[ConnectorType, dict] = {
         "channel": "#atlas-delivery",
         "digest": "18 messages. Sentiment steady. One escalation about staging flakiness, resolved.",
         "highlights": ["Staging restored", "QA signed off on sprint 41 scope"],
-    },
-    ConnectorType.resource: {
-        "team_size": 11,
-        "utilization_pct": 87,
-        "developers": [
-            {"name": "Priya S.", "skill": "Backend", "experience_yrs": 8, "availability_pct": 60, "utilization_pct": 95},
-            {"name": "Marco R.", "skill": "Frontend", "experience_yrs": 5, "availability_pct": 100, "utilization_pct": 80},
-            {"name": "Lena K.", "skill": "QA", "experience_yrs": 6, "availability_pct": 80, "utilization_pct": 90},
-        ],
     },
     ConnectorType.budget: {
         "total_usd": 1_200_000,
@@ -63,7 +121,12 @@ async def seed_simulated_for_project(db: AsyncSession, project_id: uuid.UUID) ->
         )
     ).scalars().all()
     have = set(existing)
-    for source, payload in _PAYLOADS.items():
+
+    payloads = dict(_PAYLOADS)
+    if ConnectorType.resource not in have:
+        payloads[ConnectorType.resource] = _resource_payload(datetime.now(timezone.utc))
+
+    for source, payload in payloads.items():
         if source in have:
             continue
         db.add(SimulatedDataset(project_id=project_id, source=source, payload=payload))

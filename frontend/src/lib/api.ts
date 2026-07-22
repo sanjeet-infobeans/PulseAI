@@ -14,6 +14,7 @@ import type {
   DocumentT,
   MeOut,
   Project,
+  ResourcesData,
   Sprint,
   Story,
   TokenOut,
@@ -162,6 +163,10 @@ export const api = {
 
   dashboard: {
     get: (projectId: string) => apiFetch<DashboardData>(`/projects/${projectId}/dashboard`),
+  },
+
+  resources: {
+    get: (projectId: string) => apiFetch<ResourcesData>(`/projects/${projectId}/resources`),
   },
 
   confidence: {

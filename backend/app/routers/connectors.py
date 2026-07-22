@@ -1,3 +1,4 @@
+import re
 import uuid
 from typing import Annotated
 
@@ -17,6 +18,24 @@ from app.routers.projects import _load_project
 from app.services.jira_sync import run_sync
 
 router = APIRouter(tags=["connectors"])
+
+# secret_ref is a column *name* in Connector.secret_ref (String(128)), never the
+# secret itself — must look like an env var name, not an arbitrary token.
+_ENV_VAR_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
+
+
+def _validate_secret_ref(secret_ref: str | None) -> None:
+    if secret_ref is None:
+        return
+    if not _ENV_VAR_NAME_RE.match(secret_ref):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Token secret ref must be the NAME of a server-side environment "
+                "variable (e.g. JIRA_TOKEN_ATLAS), not the token itself, and at "
+                "most 128 characters."
+            ),
+        )
 
 
 class ConnectorIn(BaseModel):
@@ -75,6 +94,7 @@ async def assign_connector(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> ConnectorOut:
     await _load_project(db, project_id, user)
+    _validate_secret_ref(body.secret_ref)
     existing = (
         await db.execute(
             select(Connector).where(

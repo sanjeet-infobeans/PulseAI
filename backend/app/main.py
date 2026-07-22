@@ -14,6 +14,7 @@ import app.models  # noqa: F401  ensure models are registered
 from app.redis import close_redis, get_redis
 from app.routers import (
     analysis, auth, chat, confidence, connectors, customers, dashboard, documents, projects,
+    resources,
 )
 from app.seed_data import seed_data
 
@@ -64,6 +65,7 @@ app.include_router(chat.router)
 app.include_router(documents.router)
 app.include_router(confidence.router)
 app.include_router(dashboard.router)
+app.include_router(resources.router)
 
 
 @app.get("/healthz", tags=["health"])

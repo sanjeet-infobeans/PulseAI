@@ -207,6 +207,40 @@ export interface DashboardData {
   open_issues: OpenIssue[]
 }
 
+export interface ResourceLeave {
+  leave_id: string
+  leave_type: string
+  start_date: string
+  end_date: string
+  total_days: number
+  status: string
+}
+
+export interface Resource {
+  resource_id: string
+  employee_code: string
+  name: string
+  designation: string
+  email: string
+  allocation_percentage: number
+  billable: boolean
+  skills: string[]
+  planned_leaves: ResourceLeave[]
+}
+
+export interface ResourceSummary {
+  total_resources: number
+  active_resources: number
+  resources_on_leave_today: number
+  planned_leaves_next_30_days: number
+  total_planned_leave_days: number
+}
+
+export interface ResourcesData {
+  resources: Resource[]
+  summary: ResourceSummary
+}
+
 export interface Story {
   id: string
   external_id: string
