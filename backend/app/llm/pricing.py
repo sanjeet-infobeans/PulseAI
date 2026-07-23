@@ -1,4 +1,6 @@
-"""Groq pricing (USD per 1M tokens), longest-prefix match. Ported from AIMS."""
+"""Groq + Gemini pricing (USD per 1M tokens), longest-prefix match. Groq table
+ported from AIMS; Gemini entries are approximate paid-tier list prices —
+adjust if Google repricing drifts."""
 from dataclasses import dataclass
 
 
@@ -16,6 +18,8 @@ _TABLE: dict[str, _Price] = {
     "openai/gpt-oss-20b": _Price(0.10, 0.50),
     "qwen/qwen3-32b": _Price(0.29, 0.59),
     "gemma2-9b": _Price(0.20, 0.20),
+    "gemini-2.0-flash": _Price(0.10, 0.40),
+    "gemini-1.5-flash": _Price(0.075, 0.30),
 }
 
 

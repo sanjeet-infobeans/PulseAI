@@ -31,13 +31,35 @@ class Settings(BaseSettings):
             return [o.strip() for o in v.split(",") if o.strip()]
         return v
 
-    # ── LLM (Groq via LiteLLM) ──────────────────────────────────────────────
-    groq_api_key: str | None = None
+    # ── LLM (Groq + Gemini via LiteLLM) ──────────────────────────────────────
     # LiteLLM model ids — "<provider>/<model>"
     llm_model_analysis: str = "groq/llama-3.3-70b-versatile"
     llm_model_chat: str = "groq/llama-3.1-8b-instant"
     llm_model_judge: str = "groq/llama-3.3-70b-versatile"
     llm_max_tokens: int = 2048
+
+    # Model used when every key for the requested model's own provider has
+    # failed and llm/client.py falls over to the other provider.
+    llm_model_gemini_fallback: str = "gemini/gemini-2.0-flash"
+    llm_model_groq_fallback: str = "groq/llama-3.3-70b-versatile"
+
+    # Single-key back-compat (still honored, folded into the pool below).
+    groq_api_key: str | None = None
+    gemini_api_key: str | None = None
+
+    # Up to 4 keys each, comma-separated — llm/client.py rotates through
+    # every one (own provider first, then the other) before a call is
+    # allowed to fail, so one revoked/rate-limited/quota-exhausted key never
+    # breaks a feature as long as any other key still works.
+    groq_api_keys: Annotated[list[str], NoDecode] = []
+    gemini_api_keys: Annotated[list[str], NoDecode] = []
+
+    @field_validator("groq_api_keys", "gemini_api_keys", mode="before")
+    @classmethod
+    def _parse_keys(cls, v: object) -> object:
+        if isinstance(v, str):
+            return [k.strip() for k in v.split(",") if k.strip()]
+        return v
 
     # ── Supabase Storage (document uploads) ─────────────────────────────────
     supabase_url: str | None = None
