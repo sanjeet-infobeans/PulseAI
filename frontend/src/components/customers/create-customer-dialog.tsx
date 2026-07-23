@@ -55,7 +55,10 @@ export function CreateCustomerDialog() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="c-email">Contact email</Label>
-              <Input id="c-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="delivery@acme.com" />
+              <Input id="c-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="delivery@acme.com" />
+              <p className="text-xs text-medium-gray">
+                Also becomes their login (default password: 12345).
+              </p>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="c-industry">Industry</Label>
@@ -69,7 +72,7 @@ export function CreateCustomerDialog() {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={create.isPending || !name.trim()}>
+            <Button type="submit" disabled={create.isPending || !name.trim() || !email.trim()}>
               {create.isPending ? "Creating…" : "Create customer"}
             </Button>
           </DialogFooter>

@@ -11,8 +11,13 @@ from app.database import get_db
 from app.models.customer import Customer
 from app.models.user import User, UserRole
 from app.routers.auth import CurrentUser, require_super_admin
+from app.security import hash_password
 
 router = APIRouter(prefix="/customers", tags=["customers"])
+
+# Demo/POC default — every customer gets a login with this password so
+# there's always a way to sign in as them without a separate provisioning step.
+_DEFAULT_CUSTOMER_PASSWORD = "12345"
 
 
 def _slugify(name: str) -> str:
@@ -83,6 +88,17 @@ async def create_customer(
     user: Annotated[User, Depends(require_super_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> CustomerOut:
+    contact_email = body.contact_email.strip().lower() if body.contact_email else None
+    if contact_email:
+        existing = (
+            await db.execute(select(User).where(User.email == contact_email))
+        ).scalar_one_or_none()
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"A user account with email {contact_email!r} already exists",
+            )
+
     customer = Customer(
         org_id=user.org_id,
         name=body.name.strip(),
@@ -92,6 +108,16 @@ async def create_customer(
         created_by=user.id,
     )
     db.add(customer)
+    await db.flush()  # assigns customer.id for the login below
+
+    if contact_email:
+        pw_hash, pw_salt = hash_password(_DEFAULT_CUSTOMER_PASSWORD)
+        db.add(User(
+            org_id=user.org_id, customer_id=customer.id, email=contact_email,
+            name=body.name.strip(), password_hash=pw_hash, password_salt=pw_salt,
+            role=UserRole.customer,
+        ))
+
     await db.commit()
     await db.refresh(customer)
     return CustomerOut.of(customer)
