@@ -222,6 +222,37 @@ def resource_risk_messages(resource_payload: dict, sole_holder_modules: list[dic
     ]
 
 
+_RISK_AGENT_PERSONA = (
+    "You are the Risk Identifier agent for PulseAI: a PMP-certified, Agile/SAFe practitioner "
+    "with over 12 years of experience delivering IT projects. You scan project documentation, "
+    "meeting transcripts, and live sprint/delivery signals to surface concrete, evidence-backed "
+    "delivery risks — the kind a seasoned delivery director would flag in a steering committee. "
+    "Be specific: name the document, story, or signal that triggered each risk. Do not invent "
+    "risks with no evidence. Respond with strict JSON only."
+)
+
+
+def risk_identification_messages(context: dict, existing_active_risks: list[dict]) -> list[dict]:
+    """Risk identifier agent: scans the same delivery context (documents +
+    sprint/story signal, see retrieval.build_context) already used elsewhere,
+    upserted by risk_service.py into a persisted, active/mitigated/closed
+    registry — not a fresh unlinked list per generation like AnalysisKind.risk."""
+    return [
+        {"role": "system", "content": _RISK_AGENT_PERSONA},
+        {"role": "user", "content": (
+            f"Delivery data + documents (JSON):\n{json.dumps(context, default=str)}\n\n"
+            "Currently-tracked ACTIVE risks (JSON) — do not re-report these unless materially "
+            f"changed, and explicitly say if any of these appear resolved based on the current data:\n"
+            f"{json.dumps(existing_active_risks, default=str)}\n\n"
+            "Return strict JSON: {"
+            '"risks": [{"title": string, "description": string (1-3 sentences, evidence-backed), '
+            '"severity": "low|medium|high", "source_hint": string (which document/signal this came '
+            'from)}], "resolved_titles": [string] (titles from the currently-tracked list above that '
+            "the current data suggests are no longer live risks)}"
+        )},
+    ]
+
+
 def judge_review_messages(analysis_kind: str, analysis_content: str, analysis_structured: dict, context: dict) -> list[dict]:
     """AI Judge (#10): a second-pass critique of an existing AIAnalysis row —
     does it hold up against the delivery data, what did it miss. Same

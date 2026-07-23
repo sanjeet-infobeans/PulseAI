@@ -13,13 +13,16 @@ import json
 import uuid
 from datetime import date, timedelta
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.llm import client, prompts
 from app.models.connector import ConnectorType
 from app.models.llm_call_log import LLMFeature
+from app.models.project_resource import LeaveStatus, ProjectResource, ResourceLeave
 from app.models.simulated import SimulatedDataset
 from app.services.knowledge_service import latest_knowledge_map
 from app.services.retrieval import simulated_signals
@@ -69,16 +72,51 @@ async def compute_resource_risk(db: AsyncSession, project_id: uuid.UUID) -> dict
     }
 
 
+def _resource_to_dict(r: ProjectResource) -> dict:
+    return {
+        "resource_id": str(r.id),
+        "employee_code": r.employee_code or "",
+        "name": r.name,
+        "designation": r.designation or "",
+        "email": r.email or "",
+        "allocation_percentage": r.allocation_percentage,
+        "billable": r.billable,
+        "skills": r.skills or [],
+        "planned_leaves": [
+            {
+                "leave_id": str(lv.id),
+                "leave_type": lv.leave_type,
+                "start_date": lv.start_date.isoformat(),
+                "end_date": lv.end_date.isoformat(),
+                "total_days": lv.total_days,
+                "status": lv.status.value,
+            }
+            for lv in r.leaves
+        ],
+    }
+
+
 async def get_resources(db: AsyncSession, project_id: uuid.UUID) -> dict:
-    row = (
+    real_rows = (
         await db.execute(
-            select(SimulatedDataset).where(
-                SimulatedDataset.project_id == project_id,
-                SimulatedDataset.source == ConnectorType.resource,
-            )
+            select(ProjectResource)
+            .options(selectinload(ProjectResource.leaves))
+            .where(ProjectResource.project_id == project_id)
         )
-    ).scalar_one_or_none()
-    resources = (row.payload.get("resources", []) if row else [])
+    ).scalars().all()
+
+    if real_rows:
+        resources = [_resource_to_dict(r) for r in real_rows]
+    else:
+        row = (
+            await db.execute(
+                select(SimulatedDataset).where(
+                    SimulatedDataset.project_id == project_id,
+                    SimulatedDataset.source == ConnectorType.resource,
+                )
+            )
+        ).scalar_one_or_none()
+        resources = (row.payload.get("resources", []) if row else [])
 
     today = date.today()
     horizon = today + timedelta(days=30)
@@ -104,3 +142,91 @@ async def get_resources(db: AsyncSession, project_id: uuid.UUID) -> dict:
         "total_planned_leave_days": sum(lv.get("total_days", 0) for lv in all_leaves),
     }
     return {"resources": resources, "summary": summary}
+
+
+async def _get_resource_or_404(db: AsyncSession, project_id: uuid.UUID, resource_id: uuid.UUID) -> ProjectResource:
+    resource = (
+        await db.execute(
+            select(ProjectResource)
+            .options(selectinload(ProjectResource.leaves))
+            .where(ProjectResource.id == resource_id, ProjectResource.project_id == project_id)
+        )
+    ).scalar_one_or_none()
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    return resource
+
+
+async def create_resource(
+    db: AsyncSession, project_id: uuid.UUID, *,
+    name: str, employee_code: str | None = None, designation: str | None = None,
+    email: str | None = None, allocation_percentage: float = 100.0,
+    billable: bool = True, skills: list[str] | None = None,
+) -> ProjectResource:
+    resource = ProjectResource(
+        project_id=project_id, name=name.strip(), employee_code=employee_code,
+        designation=designation, email=email, allocation_percentage=allocation_percentage,
+        billable=billable, skills=skills or [],
+    )
+    db.add(resource)
+    await db.commit()
+    await db.refresh(resource, attribute_names=["leaves"])
+    return resource
+
+
+async def update_resource(db: AsyncSession, project_id: uuid.UUID, resource_id: uuid.UUID, **fields) -> ProjectResource:
+    resource = await _get_resource_or_404(db, project_id, resource_id)
+    for k, v in fields.items():
+        if v is not None:
+            setattr(resource, k, v)
+    await db.commit()
+    await db.refresh(resource, attribute_names=["leaves"])
+    return resource
+
+
+async def delete_resource(db: AsyncSession, project_id: uuid.UUID, resource_id: uuid.UUID) -> None:
+    resource = await _get_resource_or_404(db, project_id, resource_id)
+    await db.delete(resource)
+    await db.commit()
+
+
+async def add_leave(
+    db: AsyncSession, project_id: uuid.UUID, resource_id: uuid.UUID, *,
+    leave_type: str, start_date: date, end_date: date, total_days: int,
+    status: LeaveStatus = LeaveStatus.pending,
+) -> ProjectResource:
+    resource = await _get_resource_or_404(db, project_id, resource_id)
+    db.add(ResourceLeave(
+        resource_id=resource.id, leave_type=leave_type, start_date=start_date,
+        end_date=end_date, total_days=total_days, status=status,
+    ))
+    await db.commit()
+    # resource is already in the session's identity map with `leaves` eagerly
+    # loaded (as it was before this insert) — a plain re-query reuses that
+    # in-memory collection rather than reflecting the new row, so the
+    # relationship must be explicitly refreshed.
+    await db.refresh(resource, attribute_names=["leaves"])
+    return resource
+
+
+async def update_leave(
+    db: AsyncSession, project_id: uuid.UUID, resource_id: uuid.UUID, leave_id: uuid.UUID, **fields
+) -> ProjectResource:
+    resource = await _get_resource_or_404(db, project_id, resource_id)
+    leave = next((lv for lv in resource.leaves if lv.id == leave_id), None)
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave not found")
+    for k, v in fields.items():
+        if v is not None:
+            setattr(leave, k, v)
+    await db.commit()
+    return await _get_resource_or_404(db, project_id, resource_id)
+
+
+async def delete_leave(db: AsyncSession, project_id: uuid.UUID, resource_id: uuid.UUID, leave_id: uuid.UUID) -> None:
+    resource = await _get_resource_or_404(db, project_id, resource_id)
+    leave = next((lv for lv in resource.leaves if lv.id == leave_id), None)
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave not found")
+    await db.delete(leave)
+    await db.commit()

@@ -3,12 +3,14 @@
 import { useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import { CheckCircle, MagicWand, Sparkle, WarningCircle } from "@phosphor-icons/react"
+import { CheckCircle, ListChecks, MagicWand, ShieldWarning, Sparkle, WarningCircle } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { useLatestAnalysis, useLatestJudgeReview, useRunAnalysis, useRunJudge } from "@/hooks/use-analysis"
 import { useRunSimulation } from "@/hooks/use-simulation"
+import { useRisks, useScanRisks, useSetRiskStatus } from "@/hooks/use-risks"
+import { useActionItems, useSetActionItemStatus } from "@/hooks/use-action-items"
 import { fmtRelative } from "@/lib/utils"
 import type { AnalysisKind } from "@/types/api"
 
@@ -46,7 +48,118 @@ export function AnalysisContent({ projectId }: { projectId: string }) {
       </Tabs>
 
       <WhatIfPanel projectId={projectId} />
+      <ActiveRisksPanel projectId={projectId} />
+      <ActionItemsPanel projectId={projectId} />
     </div>
+  )
+}
+
+function ActiveRisksPanel({ projectId }: { projectId: string }) {
+  const { data: risks, isLoading } = useRisks(projectId)
+  const scan = useScanRisks(projectId)
+  const setStatus = useSetRiskStatus(projectId)
+
+  return (
+    <section className="premium-card rounded-xl p-8 border-t-4 border-t-primary space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="eyebrow flex items-center gap-2"><ShieldWarning size={16} /> Active risks</p>
+        <Button variant="outline" size="sm" onClick={() => scan.mutate()} disabled={scan.isPending}>
+          <Sparkle size={14} className={scan.isPending ? "animate-pulse" : ""} />
+          {scan.isPending ? "Scanning…" : "Rescan risks"}
+        </Button>
+      </div>
+
+      {isLoading && <p className="text-medium-gray text-sm">Loading…</p>}
+
+      {!isLoading && (!risks || risks.length === 0) && (
+        <p className="text-medium-gray text-sm">
+          No active risks detected. Upload documents or run a scan to have the Risk Identifier
+          agent scan delivery data and transcripts for risk.
+        </p>
+      )}
+
+      {risks && risks.length > 0 && (
+        <div className="space-y-3">
+          {risks.map((r) => (
+            <div key={r.id} className="rounded-lg border-l-4 border-l-primary bg-background p-5">
+              <div className="flex items-center justify-between gap-4">
+                <h4 className="text-charcoal font-normal">{r.title}</h4>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge variant={r.severity === "high" ? "severity-high" : r.severity === "medium" ? "severity-med" : "severity-low"}>
+                    {r.severity}
+                  </Badge>
+                  <button
+                    type="button"
+                    className="text-xs text-primary hover:underline disabled:opacity-50"
+                    disabled={setStatus.isPending}
+                    onClick={() => setStatus.mutate({ riskId: r.id, status: "mitigated" })}
+                  >
+                    Mark mitigated
+                  </button>
+                </div>
+              </div>
+              {r.description && <p className="text-medium-gray text-sm mt-2">{r.description}</p>}
+              <p className="text-xs text-medium-gray mt-2">Last seen {fmtRelative(r.last_seen_at)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function ActionItemsPanel({ projectId }: { projectId: string }) {
+  const { data: summary, isLoading } = useActionItems(projectId)
+  const setStatus = useSetActionItemStatus(projectId)
+
+  return (
+    <section className="premium-card rounded-xl p-8 space-y-4">
+      <p className="eyebrow flex items-center gap-2"><ListChecks size={16} /> Action items</p>
+
+      {isLoading && <p className="text-medium-gray text-sm">Loading…</p>}
+
+      {!isLoading && summary && (summary.open_count + summary.done_count) === 0 && (
+        <p className="text-medium-gray text-sm">
+          No action items yet. These are compiled automatically from uploaded meeting transcripts.
+        </p>
+      )}
+
+      {summary && (summary.open_count + summary.done_count) > 0 && (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-medium-gray">Open</p>
+              <p className="text-headline-md text-charcoal tabular-nums mt-1">{summary.open_count}</p>
+            </div>
+            <div>
+              <p className="text-xs text-medium-gray">Done</p>
+              <p className="text-headline-md text-charcoal tabular-nums mt-1">{summary.done_count}</p>
+            </div>
+          </div>
+          <div className="space-y-5 pt-2">
+            {Object.entries(summary.by_owner).map(([owner, items]) => (
+              <div key={owner}>
+                <p className="text-xs text-medium-gray mb-2">{owner}</p>
+                <ul className="space-y-1.5">
+                  {items.map((item) => (
+                    <li key={item.id} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={item.status === "done"}
+                        onChange={(e) => setStatus.mutate({ itemId: item.id, status: e.target.checked ? "done" : "open" })}
+                      />
+                      <span className={item.status === "done" ? "text-medium-gray line-through" : "text-charcoal"}>
+                        {item.item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
   )
 }
 

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.customer import Customer
-from app.models.project import Project, ProjectStatus
+from app.models.project import Project, ProjectIndustry, ProjectStatus
 from app.models.project_outcome import ProjectOutcome
 from app.models.user import User, UserRole
 from app.routers.auth import CurrentUser, require_super_admin
@@ -24,6 +24,18 @@ class ProjectIn(BaseModel):
     description: str | None = None
     start_date: date | None = None
     target_end_date: date | None = None
+    industry: str | None = None
+    total_person_hours: float | None = None
+
+
+class ProjectUpdateIn(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    status: str | None = None
+    start_date: date | None = None
+    target_end_date: date | None = None
+    industry: str | None = None
+    total_person_hours: float | None = None
 
 
 class ProjectOut(BaseModel):
@@ -35,6 +47,8 @@ class ProjectOut(BaseModel):
     status: str
     start_date: date | None
     target_end_date: date | None
+    industry: str | None
+    total_person_hours: float | None
 
     @classmethod
     def of(cls, p: Project) -> "ProjectOut":
@@ -47,7 +61,27 @@ class ProjectOut(BaseModel):
             status=p.status.value,
             start_date=p.start_date,
             target_end_date=p.target_end_date,
+            industry=p.industry.value if p.industry else None,
+            total_person_hours=p.total_person_hours,
         )
+
+
+def _coerce_industry(value: str | None) -> ProjectIndustry | None:
+    if value is None:
+        return None
+    try:
+        return ProjectIndustry(value)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid industry: {value!r}")
+
+
+def _coerce_status(value: str | None) -> ProjectStatus | None:
+    if value is None:
+        return None
+    try:
+        return ProjectStatus(value)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid status: {value!r}")
 
 
 async def _load_project(db: AsyncSession, project_id: uuid.UUID, user: User) -> Project:
@@ -108,9 +142,33 @@ async def create_project(
         status=ProjectStatus.active,
         start_date=body.start_date,
         target_end_date=body.target_end_date,
+        industry=_coerce_industry(body.industry),
+        total_person_hours=body.total_person_hours,
         created_by=user.id,
     )
     db.add(project)
+    await db.commit()
+    await db.refresh(project)
+    return ProjectOut.of(project)
+
+
+@router.patch("/projects/{project_id}", response_model=ProjectOut)
+async def update_project(
+    project_id: uuid.UUID,
+    body: ProjectUpdateIn,
+    user: Annotated[User, Depends(require_super_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> ProjectOut:
+    project = await _load_project(db, project_id, user)
+    data = body.model_dump(exclude_unset=True)
+    if "industry" in data:
+        data["industry"] = _coerce_industry(data["industry"])
+    if "status" in data:
+        data["status"] = _coerce_status(data["status"])
+    if "name" in data and data["name"] is not None:
+        data["name"] = data["name"].strip()
+    for k, v in data.items():
+        setattr(project, k, v)
     await db.commit()
     await db.refresh(project)
     return ProjectOut.of(project)

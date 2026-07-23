@@ -30,6 +30,16 @@ export interface CreateCustomerRequest {
 
 export type ProjectStatus = "active" | "on_hold" | "completed"
 
+export type ProjectIndustry = "bfsi" | "sdo" | "media_publishing" | "healthcare" | "ecom"
+
+export const PROJECT_INDUSTRY_LABELS: Record<ProjectIndustry, string> = {
+  bfsi: "BFSI",
+  sdo: "SDO",
+  media_publishing: "Media and Publishing",
+  healthcare: "Healthcare",
+  ecom: "E-com",
+}
+
 export interface Project {
   id: string
   customer_id: string
@@ -39,6 +49,8 @@ export interface Project {
   status: ProjectStatus
   start_date: string | null
   target_end_date: string | null
+  industry: ProjectIndustry | null
+  total_person_hours: number | null
 }
 
 export interface CreateProjectRequest {
@@ -47,6 +59,18 @@ export interface CreateProjectRequest {
   description?: string | null
   start_date?: string | null
   target_end_date?: string | null
+  industry?: ProjectIndustry | null
+  total_person_hours?: number | null
+}
+
+export interface UpdateProjectRequest {
+  name?: string
+  description?: string | null
+  status?: ProjectStatus
+  start_date?: string | null
+  target_end_date?: string | null
+  industry?: ProjectIndustry | null
+  total_person_hours?: number | null
 }
 
 // ── Connectors (Week 2) ──────────────────────────────────────────────────
@@ -116,10 +140,20 @@ export interface JudgeReview {
   created_at: string
 }
 
-export interface ChatSessionT {
+export interface ScopedChatSessionT {
   id: string
   title: string
+  project_id: string | null
+  customer_id: string | null
+  industry: string | null
   created_at: string
+}
+
+export interface CreateScopedSessionRequest {
+  project_id?: string | null
+  customer_id?: string | null
+  industry?: string | null
+  title?: string
 }
 
 export interface Citation {
@@ -356,7 +390,18 @@ export interface DashboardData {
   } | null
   status_counts: Partial<Record<StatusCategory, number>>
   totals: { stories: number; done: number; completion_pct: number }
-  timeline: Array<{ name: string; state: string; completion_pct: number }>
+  sprint_panel: {
+    active: {
+      name: string
+      state: string
+      committed_points: number
+      completed_points: number
+      completion_pct: number
+    } | null
+    carried_forward: Array<{ key: string; title: string; from_sprint_name: string }>
+    commitment_trend: number | null
+    commitment_trend_sprint_count: number
+  }
   risk_cards: RiskCard[]
   recommendations: Array<{ title: string; detail: string; priority: number }>
   executive_summary: string | null
@@ -397,6 +442,42 @@ export interface ResourcesData {
   summary: ResourceSummary
 }
 
+export interface CreateResourceRequest {
+  name: string
+  employee_code?: string | null
+  designation?: string | null
+  email?: string | null
+  allocation_percentage?: number
+  billable?: boolean
+  skills?: string[]
+}
+
+export interface UpdateResourceRequest {
+  name?: string
+  employee_code?: string | null
+  designation?: string | null
+  email?: string | null
+  allocation_percentage?: number
+  billable?: boolean
+  skills?: string[]
+}
+
+export interface CreateLeaveRequest {
+  leave_type: string
+  start_date: string
+  end_date: string
+  total_days: number
+  status?: string
+}
+
+export interface UpdateLeaveRequest {
+  leave_type?: string
+  start_date?: string
+  end_date?: string
+  total_days?: number
+  status?: string
+}
+
 export interface Story {
   id: string
   external_id: string
@@ -408,4 +489,31 @@ export interface Story {
   assignee: string | null
   priority: string | null
   is_blocked: boolean
+}
+
+export type RiskSeverity = "low" | "medium" | "high"
+export type RiskStatus = "active" | "mitigated" | "closed"
+
+export interface RiskItemT {
+  id: string
+  title: string
+  description: string | null
+  severity: RiskSeverity
+  status: RiskStatus
+  last_seen_at: string
+}
+
+export type ActionItemStatus = "open" | "done"
+
+export interface ActionItemT {
+  id: string
+  item: string
+  status: ActionItemStatus
+  created_at: string
+}
+
+export interface ActionItemsSummary {
+  open_count: number
+  done_count: number
+  by_owner: Record<string, ActionItemT[]>
 }

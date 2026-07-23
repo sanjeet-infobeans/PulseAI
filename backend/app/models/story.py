@@ -69,6 +69,12 @@ class Story(Base):
     # Incremented in jira_sync when a re-sync catches a story flip from `done`
     # back to a non-done category — the requirement-volatility (#5) reopen signal.
     reopened_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Set in jira_sync when a re-sync catches sprint_id changing on a
+    # still-not-done story — single most-recent-hop marker, same lightweight
+    # pattern as reopened_count (not a full per-move history table).
+    carried_forward_from_sprint_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("sprints.id", ondelete="SET NULL"), nullable=True
+    )
     created_ext: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     updated_ext: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     resolved_ext: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -89,4 +95,6 @@ class Story(Base):
     )
 
     project: Mapped["Project"] = relationship("Project", back_populates="stories")
-    sprint: Mapped["Sprint | None"] = relationship("Sprint", back_populates="stories")
+    sprint: Mapped["Sprint | None"] = relationship(
+        "Sprint", back_populates="stories", foreign_keys=[sprint_id]
+    )

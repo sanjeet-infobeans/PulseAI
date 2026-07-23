@@ -9,7 +9,7 @@ import statistics
 import uuid
 from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -18,6 +18,7 @@ from app.models.delivery_prediction import DeliveryPrediction
 from app.models.llm_call_log import LLMFeature
 from app.models.metric_snapshot import MetricSnapshot
 from app.models.project import Project
+from app.models.project_resource import LeaveStatus, ProjectResource, ResourceLeave
 from app.models.sprint import Sprint, SprintState
 from app.models.status_ref import StatusCategory
 from app.models.story import Story
@@ -63,6 +64,40 @@ async def _rule_projection(db: AsyncSession, project_id: uuid.UUID) -> dict:
         sprints_needed = remaining_points / avg_velocity
         predicted_completion_date = date.today() + timedelta(days=sprints_needed * cadence_days)
 
+    # Derate the projection for planned team leave inside the projection window —
+    # only applies when this project has real ProjectResource rows (Phase 2);
+    # simulated-only projects have no ResourceLeave rows to query.
+    planned_leave_days_in_window = 0
+    capacity_factor = 1.0
+    if predicted_completion_date:
+        today = date.today()
+        team_size = (
+            await db.execute(
+                select(func.count(ProjectResource.id)).where(ProjectResource.project_id == project_id)
+            )
+        ).scalar_one()
+        if team_size:
+            window_days = max((predicted_completion_date - today).days, 1)
+            planned_leave_days_in_window = (
+                await db.execute(
+                    select(func.coalesce(func.sum(ResourceLeave.total_days), 0))
+                    .join(ProjectResource, ProjectResource.id == ResourceLeave.resource_id)
+                    .where(
+                        ProjectResource.project_id == project_id,
+                        ResourceLeave.status == LeaveStatus.approved,
+                        ResourceLeave.start_date <= predicted_completion_date,
+                        ResourceLeave.end_date >= today,
+                    )
+                )
+            ).scalar_one()
+            capacity_factor = _clamp(
+                1 - planned_leave_days_in_window / (team_size * window_days), 0.5, 1.0
+            )
+            if capacity_factor < 1.0 and avg_velocity > 0:
+                derated_velocity = avg_velocity * capacity_factor
+                sprints_needed = remaining_points / derated_velocity
+                predicted_completion_date = date.today() + timedelta(days=sprints_needed * cadence_days)
+
     if baseline_target_date and predicted_completion_date:
         slack_days = (baseline_target_date - predicted_completion_date).days
         rule_probability = _clamp(50 + slack_days * 2)
@@ -77,6 +112,8 @@ async def _rule_projection(db: AsyncSession, project_id: uuid.UUID) -> dict:
         "baseline_target_date": baseline_target_date.isoformat() if baseline_target_date else None,
         "rule_probability": round(rule_probability, 1),
         "closed_sprints_count": len(closed),
+        "planned_leave_days_in_window": planned_leave_days_in_window,
+        "capacity_factor": round(capacity_factor, 2),
     }
 
 
@@ -104,6 +141,14 @@ async def predict_completion(
         recommendations = parsed.get("recommendations", [])
     except Exception:  # noqa: BLE001 — LLM reasoning is best-effort; rule projection still stands
         pass
+
+    if rule["planned_leave_days_in_window"] > 0:
+        # Rule-authored, not dependent on the LLM mentioning it — stays visible
+        # even when the LLM call above fails entirely.
+        reasons.append(
+            f"{rule['planned_leave_days_in_window']} planned leave day(s) across the team in the "
+            f"projection window reduce effective capacity to {rule['capacity_factor'] * 100:.0f}%."
+        )
 
     probability_on_time = round(0.5 * rule["rule_probability"] + 0.5 * llm_probability, 1)
     # More closed-sprint history behind the velocity trend = more confidence in the estimate itself.

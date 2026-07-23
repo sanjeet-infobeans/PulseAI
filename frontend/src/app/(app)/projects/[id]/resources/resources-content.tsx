@@ -1,8 +1,10 @@
 "use client"
 
-import { CalendarBlank, UsersThree, WarningCircle } from "@phosphor-icons/react"
+import { CalendarBlank, TrashSimple, UsersThree, WarningCircle } from "@phosphor-icons/react"
 import { Badge } from "@/components/ui/badge"
-import { useResourceRisk, useResources } from "@/hooks/use-resources"
+import { useDeleteResource, useResourceRisk, useResources } from "@/hooks/use-resources"
+import { AddResourceDialog } from "@/components/projects/add-resource-dialog"
+import { AddLeaveDialog } from "@/components/projects/add-leave-dialog"
 import { fmtDate, fmtPct } from "@/lib/utils"
 import type { Resource, ResourceLeave } from "@/types/api"
 
@@ -126,11 +128,15 @@ export function ResourcesContent({ projectId }: { projectId: string }) {
       )}
 
       {!rosterLoading && resources.length === 0 ? (
-        <div className="premium-card rounded-xl p-12 text-center">
+        <div className="premium-card rounded-xl p-12 text-center space-y-4">
           <p className="text-charcoal">No resource roster yet</p>
           <p className="text-medium-gray text-sm mt-1">
-            Assign a resource connector for this project to populate the team roster.
+            Add resources to track allocation and planned leave, or assign a resource connector
+            to populate the team roster.
           </p>
+          <div className="flex justify-center">
+            <AddResourceDialog projectId={projectId} />
+          </div>
         </div>
       ) : (
         <>
@@ -146,10 +152,13 @@ export function ResourcesContent({ projectId }: { projectId: string }) {
           </div>
 
           <section className="space-y-4">
-            <h2 className="text-headline-md text-charcoal">Team roster</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-headline-md text-charcoal">Team roster</h2>
+              <AddResourceDialog projectId={projectId} />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
               {resources.map((r) => (
-                <ResourceCard key={r.resource_id} resource={r} />
+                <ResourceCard key={r.resource_id} projectId={projectId} resource={r} />
               ))}
             </div>
           </section>
@@ -185,7 +194,9 @@ export function ResourcesContent({ projectId }: { projectId: string }) {
   )
 }
 
-function ResourceCard({ resource }: { resource: Resource }) {
+function ResourceCard({ projectId, resource }: { projectId: string; resource: Resource }) {
+  const deleteResource = useDeleteResource(projectId)
+
   return (
     <div className="premium-card rounded-xl p-6 space-y-4">
       <div className="flex items-start justify-between gap-4">
@@ -198,9 +209,19 @@ function ResourceCard({ resource }: { resource: Resource }) {
             <p className="text-xs text-medium-gray truncate">{resource.designation}</p>
           </div>
         </div>
-        <Badge variant={resource.billable ? "health-good" : "neutral"}>
-          {resource.billable ? "Billable" : "Non-billable"}
-        </Badge>
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge variant={resource.billable ? "health-good" : "neutral"}>
+            {resource.billable ? "Billable" : "Non-billable"}
+          </Badge>
+          <button
+            type="button"
+            title="Remove resource"
+            className="text-medium-gray hover:text-primary"
+            onClick={() => deleteResource.mutate(resource.resource_id)}
+          >
+            <TrashSimple size={15} />
+          </button>
+        </div>
       </div>
 
       <p className="text-xs text-medium-gray truncate">{resource.email}</p>
@@ -223,6 +244,8 @@ function ResourceCard({ resource }: { resource: Resource }) {
           <Badge key={skill} variant="neutral">{skill}</Badge>
         ))}
       </div>
+
+      <AddLeaveDialog projectId={projectId} resourceId={resource.resource_id} resourceName={resource.name} />
     </div>
   )
 }

@@ -147,6 +147,14 @@ async def _persist(db, connector: Connector, bundle: NormalizedBundle) -> None:
                 and st.status_category != StatusCategory.done
             ):
                 existing.reopened_count += 1
+            # Sprint-timeline carry-forward: snapshot the old sprint before the
+            # overwrite below replaces it, same precedent as reopened_count above.
+            old_sprint_id = existing.sprint_id
+            if (
+                old_sprint_id and sprint_id and old_sprint_id != sprint_id
+                and st.status_category != StatusCategory.done
+            ):
+                existing.carried_forward_from_sprint_id = old_sprint_id
             for k, v in fields.items():
                 setattr(existing, k, v)
         else:

@@ -13,6 +13,7 @@ import { HealthGauge } from "@/components/health/health-gauge"
 import { ConfidenceMeter } from "@/components/health/confidence-meter"
 import { PredictionCard } from "@/components/health/prediction-card"
 import { RiskCard } from "@/components/insights/risk-card"
+import { EditProjectDialog } from "@/components/projects/edit-project-dialog"
 import { fmtRelative, fmtPct } from "@/lib/utils"
 
 export function ProjectOverviewContent({ projectId }: { projectId: string }) {
@@ -139,20 +140,49 @@ export function ProjectOverviewContent({ projectId }: { projectId: string }) {
           )}
         </div>
         <div className="lg:col-span-5 premium-card rounded-xl p-8">
-          <p className="eyebrow">Sprint timeline</p>
-          <div className="space-y-3 mt-4">
-            {dash?.timeline?.map((s) => (
-              <div key={s.name}>
-                <div className="flex justify-between text-xs text-medium-gray">
-                  <span>{s.name}</span>
-                  <span className="tabular-nums">{fmtPct(s.completion_pct)}</span>
-                </div>
-                <div className="h-1.5 w-full bg-light-gray rounded-full overflow-hidden mt-1">
-                  <div className={`h-full rounded-full ${s.state === "active" ? "bg-primary" : "bg-charcoal/40"}`} style={{ width: `${Math.min(s.completion_pct, 100)}%` }} />
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <p className="eyebrow">Sprint timeline</p>
+            {dash?.sprint_panel.commitment_trend != null && (
+              <span className="text-xs text-medium-gray">
+                Avg {fmtPct(dash.sprint_panel.commitment_trend)} commitment
+                <span className="text-medium-gray/70"> · last {dash.sprint_panel.commitment_trend_sprint_count} sprints</span>
+              </span>
+            )}
           </div>
+
+          {dash?.sprint_panel.active ? (
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-medium-gray">
+                <span>{dash.sprint_panel.active.name}</span>
+                <span className="tabular-nums">{fmtPct(dash.sprint_panel.active.completion_pct)}</span>
+              </div>
+              <div className="h-1.5 w-full bg-light-gray rounded-full overflow-hidden mt-1">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(dash.sprint_panel.active.completion_pct, 100)}%` }} />
+              </div>
+              <p className="text-xs text-medium-gray mt-1.5 tabular-nums">
+                {dash.sprint_panel.active.completed_points} / {dash.sprint_panel.active.committed_points} pts committed
+              </p>
+            </div>
+          ) : (
+            <p className="text-medium-gray text-sm mt-4">No active sprint.</p>
+          )}
+
+          {dash?.sprint_panel.carried_forward && dash.sprint_panel.carried_forward.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-light-gray">
+              <p className="text-xs text-medium-gray flex items-center gap-1.5 mb-2">
+                <WarningCircle size={14} className="text-primary" />
+                {dash.sprint_panel.carried_forward.length} carried forward
+              </p>
+              <ul className="space-y-1">
+                {dash.sprint_panel.carried_forward.map((c) => (
+                  <li key={c.key} className="text-xs text-charcoal">
+                    <span className="text-primary">{c.key}</span> {c.title}
+                    <span className="text-medium-gray"> · from {c.from_sprint_name}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 
@@ -210,6 +240,7 @@ function DashboardHeader({
         </p>
       </div>
       <div className="flex items-center gap-3">
+        <EditProjectDialog projectId={projectId} />
         <Button variant="outline" asChild>
           <Link href={`/projects/${projectId}/settings`}><Gear size={16} /> Jira</Link>
         </Button>

@@ -11,7 +11,6 @@ import {
   UsersThree,
   Buildings,
   FolderOpen,
-  Presentation,
   Gauge,
   SignOut,
   PlusCircle,
@@ -40,6 +39,16 @@ function navGroups(projectId: string | null): NavGroup[] {
         { label: "Sentiment", href: `${p}/sentiment`, Icon: Gauge },
       ],
     })
+  } else {
+    // Global "Ask PulseAI" (auto-scopes by role — admin picks industry/customer/
+    // project, a customer picks all their projects or one specific one). Hidden
+    // while inside a project since the per-project link above already covers it.
+    groups.push({
+      section: "Chat",
+      items: [
+        { label: "Ask PulseAI", href: "/chat", Icon: ChatCircleDots },
+      ],
+    })
   }
 
   groups.push({
@@ -49,14 +58,6 @@ function navGroups(projectId: string | null): NavGroup[] {
       { label: "Portfolio", href: "/portfolio", Icon: SquaresFour },
       { label: "Customers", href: "/customers", Icon: Buildings },
       { label: "Projects", href: "/projects", Icon: FolderOpen },
-    ],
-  })
-
-  groups.push({
-    section: "Roadmap",
-    items: [
-      { label: "Executive dashboard", href: "/executive", Icon: Presentation, future: true },
-      { label: "Sentiment", href: "/sentiment", Icon: Gauge, future: true },
     ],
   })
 

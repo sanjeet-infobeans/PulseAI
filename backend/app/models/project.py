@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, Enum as SQLEnum, ForeignKey, String, Text, func
+from sqlalchemy import Date, DateTime, Enum as SQLEnum, Float, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,6 +13,14 @@ class ProjectStatus(str, enum.Enum):
     active = "active"
     on_hold = "on_hold"
     completed = "completed"
+
+
+class ProjectIndustry(str, enum.Enum):
+    bfsi = "bfsi"
+    sdo = "sdo"
+    media_publishing = "media_publishing"
+    healthcare = "healthcare"
+    ecom = "ecom"
 
 
 class Project(Base):
@@ -36,6 +44,11 @@ class Project(Base):
     )
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     target_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    industry: Mapped[ProjectIndustry | None] = mapped_column(
+        SQLEnum(ProjectIndustry, name="project_industry_enum", native_enum=False),
+        nullable=True,
+    )
+    total_person_hours: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

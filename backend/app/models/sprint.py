@@ -66,4 +66,6 @@ class Sprint(Base):
     )
 
     project: Mapped["Project"] = relationship("Project", back_populates="sprints")
-    stories: Mapped[list["Story"]] = relationship("Story", back_populates="sprint")
+    stories: Mapped[list["Story"]] = relationship(
+        "Story", back_populates="sprint", foreign_keys="Story.sprint_id"
+    )

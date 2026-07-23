@@ -37,15 +37,15 @@ async def add_message(
     return msg
 
 
-async def extract_citations(db: AsyncSession, project_id: uuid.UUID, text: str) -> list[dict]:
-    """Find story keys the answer references (e.g. ATLAS-123) that exist in this project."""
+async def extract_citations_multi(db: AsyncSession, project_ids: list[uuid.UUID], text: str) -> list[dict]:
+    """Find story keys the answer references (e.g. ATLAS-123) that exist in the scope's project(s)."""
     candidates = set(re.findall(r"\b[A-Z][A-Z0-9]+-\d+\b", text))
-    if not candidates:
+    if not candidates or not project_ids:
         return []
     rows = (
         await db.execute(
             select(Story.external_id, Story.title)
-            .where(Story.project_id == project_id, Story.external_id.in_(candidates))
+            .where(Story.project_id.in_(project_ids), Story.external_id.in_(candidates))
         )
     ).all()
     return [{"type": "jira", "ref": ext, "label": title} for ext, title in rows]
@@ -53,6 +53,19 @@ async def extract_citations(db: AsyncSession, project_id: uuid.UUID, text: str) 
 
 async def create_session(db: AsyncSession, project_id: uuid.UUID, user_id: uuid.UUID, title: str) -> ChatSession:
     session = ChatSession(project_id=project_id, user_id=user_id, title=title[:120] or "New chat")
+    db.add(session)
+    await db.commit()
+    await db.refresh(session)
+    return session
+
+
+async def create_scoped_session(
+    db: AsyncSession, *, customer_id: uuid.UUID | None, industry: str | None,
+    user_id: uuid.UUID, title: str,
+) -> ChatSession:
+    session = ChatSession(
+        customer_id=customer_id, industry=industry, user_id=user_id, title=title[:120] or "New chat",
+    )
     db.add(session)
     await db.commit()
     await db.refresh(session)

@@ -54,22 +54,24 @@ export function PredictionCard({
         <div>
           <p className="text-xs text-medium-gray">Probability on-time</p>
           <p className="text-headline-md text-charcoal tabular-nums mt-1">{Math.round(prediction.probability_on_time)}%</p>
+          {prediction.reasons.length > 0 && (
+            <details className="mt-1.5 group">
+              <summary className="text-xs text-primary hover:underline cursor-pointer list-none">
+                Why this estimate?
+              </summary>
+              <ul className="space-y-1 mt-2">
+                {prediction.reasons.map((r, i) => (
+                  <li key={i} className="text-xs text-medium-gray"><span className="text-primary">·</span> {r}</li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
         <div>
           <p className="text-xs text-medium-gray">Confidence</p>
           <p className="text-headline-md text-charcoal tabular-nums mt-1">{Math.round(prediction.confidence_pct)}%</p>
         </div>
       </div>
-      {prediction.reasons.length > 0 && (
-        <div className="mt-5 pt-5 border-t border-light-gray">
-          <p className="eyebrow mb-2">Reasons</p>
-          <ul className="space-y-1.5">
-            {prediction.reasons.map((r, i) => (
-              <li key={i} className="text-sm text-charcoal"><span className="text-primary">·</span> {r}</li>
-            ))}
-          </ul>
-        </div>
-      )}
       {prediction.recommendations.length > 0 && (
         <div className="mt-4">
           <p className="eyebrow mb-2">Recommendations</p>

@@ -1,7 +1,7 @@
 from app.models.organization import Organization
 from app.models.user import User, UserRole
 from app.models.customer import Customer
-from app.models.project import Project, ProjectStatus
+from app.models.project import Project, ProjectStatus, ProjectIndustry
 from app.models.connector import Connector, ConnectorType, ConnectorMode, ConnectorStatus
 from app.models.status_ref import StatusRef, StatusCategory
 from app.models.sprint import Sprint, SprintState
@@ -21,6 +21,9 @@ from app.models.ai_judge_review import AIJudgeReview
 from app.models.delivery_prediction import DeliveryPrediction
 from app.models.what_if_scenario import WhatIfScenario
 from app.models.project_outcome import ProjectOutcome
+from app.models.project_resource import ProjectResource, ResourceLeave, LeaveStatus
+from app.models.action_item import ActionItem, ActionItemStatus
+from app.models.risk_item import RiskItem, RiskSeverity, RiskStatus, RiskSourceType
 
 __all__ = [
     "Organization",
@@ -29,6 +32,7 @@ __all__ = [
     "Customer",
     "Project",
     "ProjectStatus",
+    "ProjectIndustry",
     "Connector",
     "ConnectorType",
     "ConnectorMode",
@@ -67,4 +71,13 @@ __all__ = [
     "DeliveryPrediction",
     "WhatIfScenario",
     "ProjectOutcome",
+    "ProjectResource",
+    "ResourceLeave",
+    "LeaveStatus",
+    "ActionItem",
+    "ActionItemStatus",
+    "RiskItem",
+    "RiskSeverity",
+    "RiskStatus",
+    "RiskSourceType",
 ]

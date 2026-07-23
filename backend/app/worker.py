@@ -69,6 +69,30 @@ async def sync_requirement_catalog(ctx, project_id: str) -> None:
         await _run(db, uuid.UUID(project_id))
 
 
+async def sync_decision_log(ctx, project_id: str) -> None:
+    from app.database import AsyncSessionLocal
+    from app.services.decision_service import sync_decision_log as _run
+
+    async with AsyncSessionLocal() as db:
+        await _run(db, uuid.UUID(project_id))
+
+
+async def sync_action_items(ctx, project_id: str) -> None:
+    from app.database import AsyncSessionLocal
+    from app.services.action_item_service import sync_action_items as _run
+
+    async with AsyncSessionLocal() as db:
+        await _run(db, uuid.UUID(project_id))
+
+
+async def scan_project_risks(ctx, project_id: str) -> None:
+    from app.database import AsyncSessionLocal
+    from app.services.risk_service import scan_project_risks as _run
+
+    async with AsyncSessionLocal() as db:
+        await _run(db, uuid.UUID(project_id))
+
+
 async def detect_dependencies(ctx, project_id: str) -> None:
     from app.database import AsyncSessionLocal
     from app.services.dependency_service import detect_dependencies as _run
@@ -127,6 +151,9 @@ async def nightly_all_projects(ctx) -> None:
         await pool.enqueue_job("recompute_knowledge_map", str(pid))
         await pool.enqueue_job("generate_executive_briefing", str(pid))
         await pool.enqueue_job("compute_requirement_volatility", str(pid))
+        # Safety net for projects with no recent document uploads — the
+        # primary trigger is document_service.process_document completing.
+        await pool.enqueue_job("scan_project_risks", str(pid))
 
 
 class WorkerSettings:
@@ -137,6 +164,9 @@ class WorkerSettings:
         append_scope_snapshot,
         recompute_knowledge_map,
         sync_requirement_catalog,
+        sync_decision_log,
+        sync_action_items,
+        scan_project_risks,
         detect_dependencies,
         generate_executive_briefing,
         recompute_prediction,

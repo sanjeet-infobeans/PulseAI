@@ -32,7 +32,10 @@ async def _baseline_and_latest(db: AsyncSession, project_id: uuid.UUID, metric_k
     return rows[0].value, rows[-1].value
 
 
-async def compute_scope_creep(db: AsyncSession, project_id: uuid.UUID) -> dict:
+async def scope_growth_metrics(db: AsyncSession, project_id: uuid.UUID) -> dict:
+    """Pure rule computation, no LLM call — safe to call from a hot path like
+    dashboard_service.get_dashboard(). compute_scope_creep() below wraps this
+    with an LLM-derived risk narrative for the dedicated Scope Creep panel."""
     baseline_stories, latest_stories = await _baseline_and_latest(db, project_id, "scope_story_count_total")
     baseline_points, latest_points = await _baseline_and_latest(db, project_id, "scope_point_total")
 
@@ -51,7 +54,7 @@ async def compute_scope_creep(db: AsyncSession, project_id: uuid.UUID) -> dict:
         await db.execute(select(DecisionLogEntry).where(DecisionLogEntry.project_id == project_id))
     ).scalars().all()
 
-    scope_metrics = {
+    return {
         "scope_growth_pct": scope_growth_pct,
         "new_stories_added": new_stories_added,
         "requirements_tracked": requirements_added,
@@ -60,6 +63,10 @@ async def compute_scope_creep(db: AsyncSession, project_id: uuid.UUID) -> dict:
         "current_points": latest_points,
         "has_baseline": baseline_points is not None,
     }
+
+
+async def compute_scope_creep(db: AsyncSession, project_id: uuid.UUID) -> dict:
+    scope_metrics = await scope_growth_metrics(db, project_id)
 
     if not scope_metrics["has_baseline"]:
         return {

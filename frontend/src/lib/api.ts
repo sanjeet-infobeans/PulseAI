@@ -1,14 +1,19 @@
 import type {
+  ActionItemStatus,
+  ActionItemT,
+  ActionItemsSummary,
   AlignmentData,
   Analysis,
   AnalysisKind,
   ChatMessageT,
-  ChatSessionT,
   Connector,
   ConnectorType,
   ConfidenceData,
   CreateCustomerRequest,
+  CreateLeaveRequest,
   CreateProjectRequest,
+  CreateResourceRequest,
+  CreateScopedSessionRequest,
   Customer,
   DashboardData,
   DocumentT,
@@ -20,14 +25,21 @@ import type {
   PredictionData,
   Project,
   ProjectOutcome,
+  UpdateProjectRequest,
   RequirementDriftItem,
+  Resource,
   ResourceRiskData,
   ResourcesData,
+  RiskItemT,
+  RiskStatus,
+  ScopedChatSessionT,
   ScopeCreepData,
   SentimentData,
   Sprint,
   Story,
   TokenOut,
+  UpdateLeaveRequest,
+  UpdateResourceRequest,
   WhatIfResult,
 } from "@/types/api"
 
@@ -115,6 +127,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify(body),
       }),
+    update: (projectId: string, body: UpdateProjectRequest) =>
+      apiFetch<Project>(`/projects/${projectId}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
     getOutcome: (projectId: string) =>
       apiFetch<ProjectOutcome | null>(`/projects/${projectId}/outcome`),
     markOutcome: (projectId: string, deliveredOnTime: boolean) =>
@@ -171,16 +188,10 @@ export const api = {
       apiFetch<JudgeReview | null>(`/projects/${projectId}/analysis/${analysisId}/judge`),
   },
 
-  chat: {
-    sessions: (projectId: string) =>
-      apiFetch<ChatSessionT[]>(`/projects/${projectId}/chat/sessions`),
-    createSession: (projectId: string, title = "New chat") =>
-      apiFetch<ChatSessionT>(`/projects/${projectId}/chat/sessions`, {
-        method: "POST",
-        body: JSON.stringify({ title }),
-      }),
-    messages: (projectId: string, sid: string) =>
-      apiFetch<ChatMessageT[]>(`/projects/${projectId}/chat/sessions/${sid}/messages`),
+  chatScoped: {
+    createSession: (body: CreateScopedSessionRequest) =>
+      apiFetch<ScopedChatSessionT>(`/chat/sessions`, { method: "POST", body: JSON.stringify(body) }),
+    messages: (sid: string) => apiFetch<ChatMessageT[]>(`/chat/sessions/${sid}/messages`),
   },
 
   dashboard: {
@@ -191,6 +202,28 @@ export const api = {
   resources: {
     get: (projectId: string) => apiFetch<ResourceRiskData>(`/projects/${projectId}/resources`),
     getRoster: (projectId: string) => apiFetch<ResourcesData>(`/projects/${projectId}/resources/roster`),
+    create: (projectId: string, body: CreateResourceRequest) =>
+      apiFetch<Resource>(`/projects/${projectId}/resources/roster`, {
+        method: "POST", body: JSON.stringify(body),
+      }),
+    update: (projectId: string, resourceId: string, body: UpdateResourceRequest) =>
+      apiFetch<Resource>(`/projects/${projectId}/resources/roster/${resourceId}`, {
+        method: "PATCH", body: JSON.stringify(body),
+      }),
+    remove: (projectId: string, resourceId: string) =>
+      apiFetch<void>(`/projects/${projectId}/resources/roster/${resourceId}`, { method: "DELETE" }),
+    addLeave: (projectId: string, resourceId: string, body: CreateLeaveRequest) =>
+      apiFetch<Resource>(`/projects/${projectId}/resources/roster/${resourceId}/leaves`, {
+        method: "POST", body: JSON.stringify(body),
+      }),
+    updateLeave: (projectId: string, resourceId: string, leaveId: string, body: UpdateLeaveRequest) =>
+      apiFetch<Resource>(`/projects/${projectId}/resources/roster/${resourceId}/leaves/${leaveId}`, {
+        method: "PATCH", body: JSON.stringify(body),
+      }),
+    removeLeave: (projectId: string, resourceId: string, leaveId: string) =>
+      apiFetch<void>(`/projects/${projectId}/resources/roster/${resourceId}/leaves/${leaveId}`, {
+        method: "DELETE",
+      }),
   },
 
   sentiment: {
@@ -221,6 +254,24 @@ export const api = {
 
   decisions: {
     get: (projectId: string) => apiFetch<DecisionSummary>(`/projects/${projectId}/decisions`),
+  },
+
+  risks: {
+    list: (projectId: string) => apiFetch<RiskItemT[]>(`/projects/${projectId}/risks`),
+    scan: (projectId: string) =>
+      apiFetch<RiskItemT[]>(`/projects/${projectId}/risks/scan`, { method: "POST" }),
+    setStatus: (projectId: string, riskId: string, status: RiskStatus) =>
+      apiFetch<RiskItemT>(`/projects/${projectId}/risks/${riskId}`, {
+        method: "PATCH", body: JSON.stringify({ status }),
+      }),
+  },
+
+  actionItems: {
+    get: (projectId: string) => apiFetch<ActionItemsSummary>(`/projects/${projectId}/action-items`),
+    setStatus: (projectId: string, itemId: string, status: ActionItemStatus) =>
+      apiFetch<ActionItemT>(`/projects/${projectId}/action-items/${itemId}`, {
+        method: "PATCH", body: JSON.stringify({ status }),
+      }),
   },
 
   confidence: {
