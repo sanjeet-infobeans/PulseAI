@@ -31,6 +31,13 @@ class CustomerIn(BaseModel):
     industry: str | None = None
 
 
+class CustomerUpdateIn(BaseModel):
+    name: str | None = None
+    contact_email: str | None = None
+    industry: str | None = None
+    is_active: bool | None = None
+
+
 class CustomerOut(BaseModel):
     id: str
     name: str
@@ -79,6 +86,28 @@ async def get_customer(
         raise HTTPException(status_code=404, detail="Customer not found")
     if user.role == UserRole.customer and user.customer_id != customer.id:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
+    return CustomerOut.of(customer)
+
+
+@router.patch("/{customer_id}", response_model=CustomerOut)
+async def update_customer(
+    customer_id: uuid.UUID,
+    body: CustomerUpdateIn,
+    user: Annotated[User, Depends(require_super_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> CustomerOut:
+    customer = await db.get(Customer, customer_id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    data = body.model_dump(exclude_unset=True)
+    if "name" in data and data["name"] is not None:
+        data["name"] = data["name"].strip()
+    for k, v in data.items():
+        setattr(customer, k, v)
+
+    await db.commit()
+    await db.refresh(customer)
     return CustomerOut.of(customer)
 
 

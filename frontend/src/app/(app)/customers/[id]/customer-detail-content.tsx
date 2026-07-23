@@ -6,6 +6,7 @@ import { useCustomer } from "@/hooks/use-customers"
 import { useProjects } from "@/hooks/use-projects"
 import { useCurrentUser, isSuperAdmin } from "@/lib/auth"
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog"
+import { EditProjectDialog } from "@/components/projects/edit-project-dialog"
 import { Badge } from "@/components/ui/badge"
 
 const STATUS_VARIANT = {
@@ -57,7 +58,10 @@ export function CustomerDetailContent({ customerId }: { customerId: string }) {
                   <p className="eyebrow">{p.key}</p>
                   <h3 className="text-headline-md text-charcoal mt-2">{p.name}</h3>
                 </div>
-                <Badge variant={STATUS_VARIANT[p.status]}>{p.status.replace("_", " ")}</Badge>
+                <div className="flex items-center gap-1">
+                  <Badge variant={STATUS_VARIANT[p.status]}>{p.status.replace("_", " ")}</Badge>
+                  {isSuperAdmin(user?.role) && <EditProjectDialog projectId={p.id} compact />}
+                </div>
               </div>
               <p className="text-medium-gray text-sm mt-3 line-clamp-2">{p.description ?? "No description"}</p>
               <div className="flex items-center gap-2 text-primary text-sm mt-6">

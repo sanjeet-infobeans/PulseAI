@@ -38,6 +38,7 @@ import type {
   Sprint,
   Story,
   TokenOut,
+  UpdateCustomerRequest,
   UpdateLeaveRequest,
   UpdateResourceRequest,
   WhatIfResult,
@@ -116,6 +117,8 @@ export const api = {
     get: (id: string) => apiFetch<Customer>(`/customers/${id}`),
     create: (body: CreateCustomerRequest) =>
       apiFetch<Customer>("/customers", { method: "POST", body: JSON.stringify(body) }),
+    update: (id: string, body: UpdateCustomerRequest) =>
+      apiFetch<Customer>(`/customers/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   },
 
   projects: {

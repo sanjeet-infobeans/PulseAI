@@ -5,6 +5,7 @@ import { Buildings, ArrowRight } from "@phosphor-icons/react"
 import { useCustomers } from "@/hooks/use-customers"
 import { useCurrentUser, isSuperAdmin } from "@/lib/auth"
 import { CreateCustomerDialog } from "@/components/customers/create-customer-dialog"
+import { EditCustomerDialog } from "@/components/customers/edit-customer-dialog"
 import { Badge } from "@/components/ui/badge"
 
 export function CustomersContent() {
@@ -47,11 +48,14 @@ export function CustomersContent() {
                 <div className="w-11 h-11 rounded-md bg-background flex items-center justify-center">
                   <Buildings size={22} weight="regular" className="text-primary" />
                 </div>
-                {c.is_active ? (
-                  <Badge variant="health-good">Active</Badge>
-                ) : (
-                  <Badge variant="neutral">Inactive</Badge>
-                )}
+                <div className="flex items-center gap-1">
+                  {c.is_active ? (
+                    <Badge variant="health-good">Active</Badge>
+                  ) : (
+                    <Badge variant="neutral">Inactive</Badge>
+                  )}
+                  {isSuperAdmin(user?.role) && <EditCustomerDialog customer={c} />}
+                </div>
               </div>
               <h3 className="text-headline-md text-charcoal mt-6">{c.name}</h3>
               <p className="text-medium-gray text-sm mt-1">{c.industry ?? "—"}</p>

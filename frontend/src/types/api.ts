@@ -28,6 +28,13 @@ export interface CreateCustomerRequest {
   industry?: string | null
 }
 
+export interface UpdateCustomerRequest {
+  name?: string
+  contact_email?: string | null
+  industry?: string | null
+  is_active?: boolean
+}
+
 export type ProjectStatus = "active" | "on_hold" | "completed"
 
 export type ProjectIndustry = "bfsi" | "sdo" | "media_publishing" | "healthcare" | "ecom"

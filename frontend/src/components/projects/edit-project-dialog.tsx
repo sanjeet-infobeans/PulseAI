@@ -17,7 +17,7 @@ import {
 import { useProject, useUpdateProject } from "@/hooks/use-projects"
 import { PROJECT_INDUSTRY_LABELS, type ProjectIndustry } from "@/types/api"
 
-export function EditProjectDialog({ projectId }: { projectId: string }) {
+export function EditProjectDialog({ projectId, compact = false }: { projectId: string; compact?: boolean }) {
   const [open, setOpen] = useState(false)
   const { data: project } = useProject(projectId)
   const update = useUpdateProject(projectId)
@@ -52,12 +52,23 @@ export function EditProjectDialog({ projectId }: { projectId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <PencilSimple size={16} />
-          Edit project
-        </Button>
+        {compact ? (
+          <button
+            type="button"
+            title="Edit project"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation() }}
+            className="w-8 h-8 rounded-md flex items-center justify-center text-medium-gray hover:text-primary hover:bg-background transition-colors"
+          >
+            <PencilSimple size={16} />
+          </button>
+        ) : (
+          <Button variant="outline">
+            <PencilSimple size={16} />
+            Edit project
+          </Button>
+        )}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Edit project</DialogTitle>
         </DialogHeader>
