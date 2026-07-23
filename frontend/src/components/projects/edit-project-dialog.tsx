@@ -56,7 +56,7 @@ export function EditProjectDialog({ projectId, compact = false }: { projectId: s
           <button
             type="button"
             title="Edit project"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation() }}
+            onClick={(e) => e.stopPropagation()}
             className="w-8 h-8 rounded-md flex items-center justify-center text-medium-gray hover:text-primary hover:bg-background transition-colors"
           >
             <PencilSimple size={16} />
