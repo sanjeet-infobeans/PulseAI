@@ -41,16 +41,21 @@ export function EditCustomerDialog({ customer }: { customer: Customer }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          title="Edit customer"
-          onClick={(e) => e.stopPropagation()}
-          className="w-8 h-8 rounded-md flex items-center justify-center text-medium-gray hover:text-primary hover:bg-background transition-colors"
-        >
-          <PencilSimple size={16} />
-        </button>
-      </DialogTrigger>
+      {/* Wrapper (not the trigger itself) intercepts the click on its way up to
+          the card's Link: Radix's own click handler fires first (uninterrupted,
+          since nothing has called preventDefault yet), opening the dialog, and
+          only then does this bubble here to stop it from reaching the Link. */}
+      <span onClick={(e) => { e.preventDefault(); e.stopPropagation() }}>
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            title="Edit customer"
+            className="w-8 h-8 rounded-md flex items-center justify-center text-medium-gray hover:text-primary hover:bg-background transition-colors"
+          >
+            <PencilSimple size={16} />
+          </button>
+        </DialogTrigger>
+      </span>
       <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Edit customer</DialogTitle>
