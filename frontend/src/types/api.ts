@@ -101,6 +101,18 @@ export interface Analysis {
   kind: AnalysisKind
   content: string
   structured: Record<string, unknown>
+  generated_by: string | null
+  created_at: string
+}
+
+export interface JudgeReview {
+  id: string
+  analysis_id: string
+  coverage_pct: number
+  missing_risks_count: number
+  missing_stories_count: number
+  confidence_pct: number
+  notes: string | null
   created_at: string
 }
 
@@ -151,9 +163,17 @@ export type StatusCategory = "todo" | "in_progress" | "blocked" | "in_review" | 
 export interface ConfidenceSignal {
   name: string
   value: number
-  weight: number
+  weight: number | null
   contribution: number
 }
+
+export type ConfidenceCategory =
+  | "requirement"
+  | "engineering"
+  | "testing"
+  | "dependencies"
+  | "resource"
+  | "customer"
 
 export interface ConfidenceData {
   score: number
@@ -161,6 +181,7 @@ export interface ConfidenceData {
   rule_score: number
   judge_score: number
   signals: ConfidenceSignal[]
+  sub_scores: Partial<Record<ConfidenceCategory, number | null>> | null
   rationale: string | null
 }
 
@@ -186,6 +207,141 @@ export interface AlignmentData {
   unmapped_requirements: string[]
   out_of_scope_stories: Array<{ key: string; title: string }>
   summary: string
+}
+
+export interface PortfolioData {
+  projects: Array<{
+    project_id: string
+    name: string
+    customer_name: string
+    confidence_score: number | null
+    band: "red" | "amber" | "green" | null
+    scope_growth_pct: number | null
+  }>
+  needing_attention_count: number
+  most_common_blocker: string | null
+  avg_scope_growth_pct: number | null
+  highest_risk_customer: string | null
+}
+
+export interface ProjectOutcome {
+  actual_duration_days: number | null
+  actual_velocity_avg: number | null
+  defect_density: number | null
+  delivered_on_time: boolean | null
+  closed_at: string | null
+}
+
+export interface WhatIfResult {
+  id: string
+  scenario_text: string
+  estimated_weeks: number | null
+  resources_needed: string[]
+  risk: "low" | "medium" | "high"
+  confidence_delta: number
+  summary: string | null
+  created_at: string
+}
+
+export interface SentimentData {
+  current_score: number | null
+  trend: "improving" | "steady" | "declining"
+  series: number[]
+  reasons: string[]
+  history_points: number
+}
+
+export interface PredictionData {
+  predicted_completion_date: string | null
+  baseline_target_date: string | null
+  probability_on_time: number
+  confidence_pct: number
+  reasons: string[]
+  recommendations: string[]
+  created_at: string
+}
+
+export interface ScopeCreepData {
+  scope_growth_pct: number
+  new_stories_added: number
+  requirements_tracked: number
+  customer_decisions: number
+  baseline_points: number | null
+  current_points: number | null
+  has_baseline: boolean
+  risk_level: "low" | "medium" | "high"
+  estimated_schedule_impact_weeks: number
+  estimated_cost_impact_note: string
+  summary: string
+}
+
+export interface DecisionSummary {
+  avg_delay_days: number | null
+  decided_count: number
+  pending: Array<{
+    topic: string
+    requested_by: string | null
+    requested_at: string | null
+    days_pending: number | null
+  }>
+  decisions: Array<{
+    topic: string
+    status: "pending" | "approved" | "rejected"
+    source: string
+    requested_at: string | null
+    decided_at: string | null
+    requested_by: string | null
+    decided_by: string | null
+    sprint_impact_days: number | null
+  }>
+}
+
+export interface DependencyEdgeT {
+  id: string
+  from_type: string
+  from_ref: string
+  to_type: string
+  to_ref: string
+  relation: "blocks" | "depends_on" | "mentioned_in" | "derived_from" | "impacts"
+  confidence: number
+  rationale: string | null
+  detected_at: string
+}
+
+export interface RequirementDriftItem {
+  id: string
+  text: string
+  source_type: string
+  first_seen_at: string
+  estimated_effort_sp: number | null
+  risk: "high" | "medium" | "low"
+  rationale: string
+}
+
+export interface DeveloperResource {
+  name: string
+  skill: string
+  experience_yrs: number
+  availability_pct: number
+  utilization_pct: number
+}
+
+export interface KnowledgeMapRow {
+  module: string
+  developer: string
+  story_count: number
+  is_sole_holder: boolean
+}
+
+export interface ResourceRiskData {
+  team_size: number | null
+  team_utilization_pct: number | null
+  developers: DeveloperResource[]
+  knowledge_concentration: KnowledgeMapRow[]
+  sole_holder_modules: Array<{ module: string; developer: string; story_count: number }>
+  burnout_risk: "low" | "medium" | "high"
+  burnout_reason: string
+  recommendations: string[]
 }
 
 export interface DashboardData {

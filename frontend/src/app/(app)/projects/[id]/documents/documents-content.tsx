@@ -7,8 +7,8 @@ import {
 } from "@phosphor-icons/react"
 import { Badge } from "@/components/ui/badge"
 import { fmtRelative } from "@/lib/utils"
-import { useDocuments, useUploadDocument, useDeleteDocument } from "@/hooks/use-documents"
-import { DOC_TYPE_LABELS, type DocTypeT, type DocumentT } from "@/types/api"
+import { useDocuments, useUploadDocument, useDeleteDocument, useRequirementDrift } from "@/hooks/use-documents"
+import { DOC_TYPE_LABELS, type DocTypeT, type DocumentT, type RequirementDriftItem } from "@/types/api"
 
 const CATEGORIES: DocTypeT[] = ["brd", "transcript", "change_request", "other"]
 
@@ -16,6 +16,7 @@ export function DocumentsContent({ projectId }: { projectId: string }) {
   const { data: docs } = useDocuments(projectId)
   const upload = useUploadDocument(projectId)
   const remove = useDeleteDocument(projectId)
+  const { data: drift } = useRequirementDrift(projectId)
   const [docType, setDocType] = useState<DocTypeT>("brd")
 
   const onDrop = useCallback(
@@ -79,7 +80,40 @@ export function DocumentsContent({ projectId }: { projectId: string }) {
           <DocumentCard key={d.id} doc={d} onDelete={() => remove.mutate(d.id)} deleting={remove.isPending} />
         ))}
       </div>
+
+      {drift && drift.length > 0 && <RequirementDriftPanel items={drift} />}
     </div>
+  )
+}
+
+function RequirementDriftPanel({ items }: { items: RequirementDriftItem[] }) {
+  return (
+    <section className="premium-card rounded-xl p-8 border-l-4 border-l-primary space-y-4">
+      <div>
+        <p className="eyebrow">Requirement drift</p>
+        <h2 className="text-headline-md text-charcoal mt-1">Discussed, but no story yet</h2>
+        <p className="text-medium-gray text-sm mt-1">
+          Requirements found in a document with no traceable Jira story.
+        </p>
+      </div>
+      <div className="space-y-3">
+        {items.map((it) => (
+          <div key={it.id} className="rounded-lg border-l-4 border-l-primary bg-background p-5">
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-charcoal text-sm">{it.text}</p>
+              <Badge variant={it.risk === "high" ? "severity-high" : it.risk === "medium" ? "severity-med" : "severity-low"}>
+                {it.risk} risk
+              </Badge>
+            </div>
+            <p className="text-xs text-medium-gray mt-2">
+              {typeLabel(it.source_type)} · {fmtRelative(it.first_seen_at)}
+              {it.estimated_effort_sp != null && ` · ~${it.estimated_effort_sp} SP`}
+            </p>
+            {it.rationale && <p className="text-xs text-medium-gray mt-1">{it.rationale}</p>}
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 

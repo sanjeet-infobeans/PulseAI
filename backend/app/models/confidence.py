@@ -45,6 +45,10 @@ class ConfidenceScore(Base):
     signals: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
     model: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    # Explainable breakdown (#8): signals grouped into Requirement/Engineering/
+    # Testing/Dependencies/Resource/Customer sub-scores. Nullable — populated
+    # going forward, absent on historical rows.
+    sub_scores: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -27,3 +27,19 @@ export function useCreateProject(customerId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects", customerId] }),
   })
 }
+
+export function useProjectOutcome(projectId: string) {
+  return useQuery({
+    queryKey: ["project-outcome", projectId],
+    queryFn: () => api.projects.getOutcome(projectId),
+    enabled: !!projectId,
+  })
+}
+
+export function useMarkProjectOutcome(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (deliveredOnTime: boolean) => api.projects.markOutcome(projectId, deliveredOnTime),
+    onSuccess: (data) => qc.setQueryData(["project-outcome", projectId], data),
+  })
+}

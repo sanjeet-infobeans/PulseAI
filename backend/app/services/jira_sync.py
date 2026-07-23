@@ -1,7 +1,8 @@
 """Connector sync: fetch → normalize → upsert into the delivery tables.
 
-Runs as a FastAPI BackgroundTask, so it opens its OWN AsyncSession (the request
-session is already closed by the time this runs). Celery/ARQ is the production path.
+Runs as an ARQ job (app.worker.run_jira_sync), so it opens its OWN AsyncSession
+(the request session is already closed by the time this runs) — same
+open-your-own-session convention as document_service.process_document.
 """
 import logging
 import uuid
@@ -41,12 +42,27 @@ async def run_sync(connector_id: uuid.UUID) -> None:
                 "Synced connector %s: %d sprints, %d stories",
                 connector_id, len(bundle.sprints), len(bundle.stories),
             )
+            await _enqueue_recompute(connector.project_id)
         except Exception as exc:  # noqa: BLE001
             await db.rollback()
             connector.status = ConnectorStatus.error
             connector.last_error = str(exc)[:1000]
             await db.commit()
             logger.exception("Sync failed for connector %s", connector_id)
+
+
+async def _enqueue_recompute(project_id: uuid.UUID) -> None:
+    """Cheap/rule-based recompute — safe to run after every sync (LLM-heavy
+    jobs like dependency detection are nightly-cron only, see app/worker.py)."""
+    from app.queue import get_arq_pool
+
+    pool = await get_arq_pool()
+    pid = str(project_id)
+    await pool.enqueue_job("append_velocity_snapshot", pid)
+    await pool.enqueue_job("append_scope_snapshot", pid)
+    await pool.enqueue_job("recompute_knowledge_map", pid)
+    await pool.enqueue_job("recompute_confidence", pid)
+    await pool.enqueue_job("recompute_prediction", pid)
 
 
 async def _persist(db, connector: Connector, bundle: NormalizedBundle) -> None:
@@ -124,6 +140,13 @@ async def _persist(db, connector: Connector, bundle: NormalizedBundle) -> None:
             resolved_ext=st.resolved_ext,
         )
         if existing:
+            # Requirement-volatility (#5) reopen signal: a story that was done
+            # and comes back non-done on a later sync got reopened.
+            if (
+                existing.status_category == StatusCategory.done
+                and st.status_category != StatusCategory.done
+            ):
+                existing.reopened_count += 1
             for k, v in fields.items():
                 setattr(existing, k, v)
         else:

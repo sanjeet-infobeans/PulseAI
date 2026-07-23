@@ -22,3 +22,27 @@ export function useComputeConfidence(projectId: string) {
 export function useAlignment(projectId: string) {
   return useMutation({ mutationFn: () => api.confidence.alignment(projectId) })
 }
+
+export function usePrediction(projectId: string) {
+  return useQuery({
+    queryKey: ["prediction", projectId],
+    queryFn: () => api.prediction.latest(projectId),
+    enabled: !!projectId,
+  })
+}
+
+export function useComputePrediction(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.prediction.compute(projectId),
+    onSuccess: (data) => qc.setQueryData(["prediction", projectId], data),
+  })
+}
+
+export function useScopeCreep(projectId: string) {
+  return useQuery({
+    queryKey: ["scope-creep", projectId],
+    queryFn: () => api.dashboard.scopeCreep(projectId),
+    enabled: !!projectId,
+  })
+}

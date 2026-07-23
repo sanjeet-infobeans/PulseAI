@@ -3,11 +3,13 @@
 import { useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import { Sparkle, WarningCircle } from "@phosphor-icons/react"
+import { CheckCircle, MagicWand, Sparkle, WarningCircle } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { useLatestAnalysis, useRunAnalysis } from "@/hooks/use-analysis"
+import { useLatestAnalysis, useLatestJudgeReview, useRunAnalysis, useRunJudge } from "@/hooks/use-analysis"
+import { useRunSimulation } from "@/hooks/use-simulation"
+import { fmtRelative } from "@/lib/utils"
 import type { AnalysisKind } from "@/types/api"
 
 const KINDS: { key: AnalysisKind; label: string }[] = [
@@ -42,7 +44,67 @@ export function AnalysisContent({ projectId }: { projectId: string }) {
           </TabsContent>
         ))}
       </Tabs>
+
+      <WhatIfPanel projectId={projectId} />
     </div>
+  )
+}
+
+function WhatIfPanel({ projectId }: { projectId: string }) {
+  const [scenario, setScenario] = useState("")
+  const simulate = useRunSimulation(projectId)
+
+  return (
+    <section className="premium-card rounded-xl p-8 border-t-4 border-t-primary space-y-4">
+      <p className="eyebrow flex items-center gap-2"><MagicWand size={16} /> What-if simulation</p>
+      <div className="flex gap-3">
+        <input
+          value={scenario}
+          onChange={(e) => setScenario(e.target.value)}
+          placeholder="e.g. What if we add a Payment Gateway integration?"
+          className="flex-1 rounded-sm border border-light-gray px-3 py-2 text-sm bg-background focus:outline-none focus:border-primary"
+        />
+        <Button
+          onClick={() => simulate.mutate(scenario)}
+          disabled={simulate.isPending || !scenario.trim()}
+        >
+          <Sparkle size={16} className={simulate.isPending ? "animate-pulse" : ""} />
+          {simulate.isPending ? "Simulating…" : "Simulate"}
+        </Button>
+      </div>
+
+      {simulate.data && (
+        <div className="pt-4 border-t border-light-gray space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs text-medium-gray">Estimated time</p>
+              <p className="text-headline-md text-charcoal tabular-nums mt-1">
+                {simulate.data.estimated_weeks != null ? `${simulate.data.estimated_weeks}w` : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-medium-gray">Risk</p>
+              <Badge variant={simulate.data.risk === "high" ? "severity-high" : simulate.data.risk === "medium" ? "severity-med" : "severity-low"}>
+                {simulate.data.risk}
+              </Badge>
+            </div>
+            <div>
+              <p className="text-xs text-medium-gray">Confidence impact</p>
+              <p className={`text-headline-md tabular-nums mt-1 ${simulate.data.confidence_delta < 0 ? "text-primary" : "text-charcoal"}`}>
+                {simulate.data.confidence_delta > 0 ? "+" : ""}{simulate.data.confidence_delta}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-medium-gray">Resources needed</p>
+              <p className="text-sm text-charcoal mt-1">
+                {simulate.data.resources_needed.length > 0 ? simulate.data.resources_needed.join(", ") : "—"}
+              </p>
+            </div>
+          </div>
+          {simulate.data.summary && <p className="text-sm text-medium-gray">{simulate.data.summary}</p>}
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -50,15 +112,26 @@ function AnalysisPanel({ projectId, kind, label }: { projectId: string; kind: An
   const { data: latest, isLoading } = useLatestAnalysis(projectId, kind)
   const run = useRunAnalysis(projectId)
   const analysis = run.data?.kind === kind ? run.data : latest
+  const judge = useRunJudge(projectId)
+  const { data: latestReview } = useLatestJudgeReview(projectId, analysis?.id)
+  const review = judge.data?.analysis_id === analysis?.id ? judge.data : latestReview
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h2 className="text-headline-md text-charcoal">{label}</h2>
-        <Button onClick={() => run.mutate({ kind })} disabled={run.isPending}>
-          <Sparkle size={16} className={run.isPending ? "animate-pulse" : ""} />
-          {run.isPending ? "Analyzing…" : analysis ? "Regenerate" : "Generate"}
-        </Button>
+        <div className="flex items-center gap-3">
+          {analysis && (
+            <Button variant="outline" onClick={() => judge.mutate(analysis.id)} disabled={judge.isPending}>
+              <CheckCircle size={16} className={judge.isPending ? "animate-pulse" : ""} />
+              {judge.isPending ? "Verifying…" : "Verify with AI Judge"}
+            </Button>
+          )}
+          <Button onClick={() => run.mutate({ kind })} disabled={run.isPending}>
+            <Sparkle size={16} className={run.isPending ? "animate-pulse" : ""} />
+            {run.isPending ? "Analyzing…" : analysis ? "Regenerate" : "Generate"}
+          </Button>
+        </div>
       </div>
 
       {run.isError && (
@@ -77,12 +150,54 @@ function AnalysisPanel({ projectId, kind, label }: { projectId: string; kind: An
 
       {analysis && (
         <div className="premium-card rounded-xl p-8 border-t-4 border-t-primary">
+          {kind === "executive" && (
+            <div className="flex items-center gap-3 mb-4">
+              <p className="text-xs text-medium-gray">
+                {analysis.generated_by ? "Generated manually" : "Auto-generated overnight"} · {fmtRelative(analysis.created_at)}
+              </p>
+              {analysis.structured?.intervention_needed === true && (
+                <Badge variant="severity-high">Intervention recommended</Badge>
+              )}
+              {analysis.structured?.intervention_needed === false && (
+                <Badge variant="severity-low">No intervention required</Badge>
+              )}
+            </div>
+          )}
           <article className="prose-pulse">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis.content}</ReactMarkdown>
           </article>
           <StructuredView kind={kind} structured={analysis.structured} />
         </div>
       )}
+
+      {review && <JudgeReviewPanel review={review} />}
+    </div>
+  )
+}
+
+function JudgeReviewPanel({ review }: { review: import("@/types/api").JudgeReview }) {
+  return (
+    <div className="premium-card rounded-xl p-6 border-l-4 border-l-medium-gray">
+      <div className="flex items-center gap-2">
+        <CheckCircle size={16} className="text-medium-gray" />
+        <p className="eyebrow">AI Judge review</p>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+        <JudgeStat label="Coverage" value={`${Math.round(review.coverage_pct)}%`} />
+        <JudgeStat label="Missing risks" value={String(review.missing_risks_count)} />
+        <JudgeStat label="Missing stories" value={String(review.missing_stories_count)} />
+        <JudgeStat label="Confidence" value={`${Math.round(review.confidence_pct)}%`} />
+      </div>
+      {review.notes && <p className="text-medium-gray text-sm mt-4">{review.notes}</p>}
+    </div>
+  )
+}
+
+function JudgeStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-medium-gray">{label}</p>
+      <p className="text-headline-md text-charcoal tabular-nums mt-1">{value}</p>
     </div>
   )
 }

@@ -1,9 +1,10 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.connectors.registry import get_connector
@@ -12,9 +13,9 @@ from app.models.connector import Connector, ConnectorMode, ConnectorStatus, Conn
 from app.models.sprint import Sprint
 from app.models.story import Story
 from app.models.user import User
+from app.queue import get_arq_pool
 from app.routers.auth import CurrentUser, require_super_admin
 from app.routers.projects import _load_project
-from app.services.jira_sync import run_sync
 
 router = APIRouter(tags=["connectors"])
 
@@ -88,6 +89,7 @@ async def assign_connector(
         existing.secret_ref = body.secret_ref
         existing.status = ConnectorStatus.unconfigured
         connector = existing
+        await db.commit()
     else:
         connector = Connector(
             project_id=project_id, type=body.type, mode=body.mode,
@@ -95,7 +97,24 @@ async def assign_connector(
             status=ConnectorStatus.unconfigured,
         )
         db.add(connector)
-    await db.commit()
+        try:
+            await db.commit()
+        except IntegrityError:
+            # Lost a race against a concurrent save for the same (project, type) —
+            # fall back to updating the row the other request just created.
+            await db.rollback()
+            connector = (
+                await db.execute(
+                    select(Connector).where(
+                        Connector.project_id == project_id, Connector.type == body.type
+                    )
+                )
+            ).scalar_one()
+            connector.mode = body.mode
+            connector.config = body.config
+            connector.secret_ref = body.secret_ref
+            connector.status = ConnectorStatus.unconfigured
+            await db.commit()
     await db.refresh(connector)
     return ConnectorOut.of(connector)
 
@@ -117,14 +136,14 @@ async def test_connector(
 @router.post("/projects/{project_id}/connectors/{cid}/sync", status_code=202)
 async def sync_connector(
     project_id: uuid.UUID, cid: uuid.UUID,
-    background: BackgroundTasks,
     user: Annotated[User, Depends(require_super_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     connector = await _load_connector(db, project_id, cid, user)
     connector.status = ConnectorStatus.syncing
     await db.commit()
-    background.add_task(run_sync, connector.id)
+    pool = await get_arq_pool()
+    await pool.enqueue_job("run_jira_sync", str(connector.id))
     return {"status": "syncing", "connector_id": str(connector.id)}
 
 

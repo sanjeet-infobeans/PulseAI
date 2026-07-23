@@ -5,12 +5,13 @@ import Link from "next/link"
 import { Gear, Sparkle, WarningCircle, ArrowRight } from "@phosphor-icons/react"
 import { useProject } from "@/hooks/use-projects"
 import { useConnectors, jiraConnector } from "@/hooks/use-connectors"
-import { useDashboard, useComputeConfidence, useAlignment } from "@/hooks/use-dashboard"
+import { useDashboard, useComputeConfidence, useAlignment, useScopeCreep, usePrediction, useComputePrediction } from "@/hooks/use-dashboard"
 import { useRunAnalysis } from "@/hooks/use-analysis"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { HealthGauge } from "@/components/health/health-gauge"
 import { ConfidenceMeter } from "@/components/health/confidence-meter"
+import { PredictionCard } from "@/components/health/prediction-card"
 import { RiskCard } from "@/components/insights/risk-card"
 import { fmtRelative, fmtPct } from "@/lib/utils"
 
@@ -21,6 +22,9 @@ export function ProjectOverviewContent({ projectId }: { projectId: string }) {
   const compute = useComputeConfidence(projectId)
   const runAnalysis = useRunAnalysis(projectId)
   const alignment = useAlignment(projectId)
+  const { data: scopeCreep } = useScopeCreep(projectId)
+  const { data: prediction } = usePrediction(projectId)
+  const computePrediction = useComputePrediction(projectId)
   const jira = jiraConnector(connectors)
   const [analyzing, setAnalyzing] = useState(false)
 
@@ -36,6 +40,7 @@ export function ProjectOverviewContent({ projectId }: { projectId: string }) {
         alignment.mutateAsync(),
       ])
       await compute.mutateAsync()
+      await computePrediction.mutateAsync()
     } finally {
       setAnalyzing(false)
     }
@@ -91,6 +96,13 @@ export function ProjectOverviewContent({ projectId }: { projectId: string }) {
         </div>
       </div>
 
+      {/* Delivery completion prediction */}
+      <PredictionCard
+        prediction={prediction ?? null}
+        onCompute={() => computePrediction.mutate()}
+        computing={computePrediction.isPending}
+      />
+
       {/* Risk strip */}
       {dash?.risk_cards && dash.risk_cards.length > 0 && (
         <section className="space-y-4">
@@ -108,6 +120,9 @@ export function ProjectOverviewContent({ projectId }: { projectId: string }) {
 
       {/* Requirements alignment vs the document knowledge base */}
       {alignment.data && <AlignmentPanel data={alignment.data} />}
+
+      {/* Scope creep vs the earliest synced baseline */}
+      {scopeCreep && scopeCreep.has_baseline && <ScopeCreepPanel data={scopeCreep} />}
 
       {/* Split: executive summary + timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
@@ -257,6 +272,34 @@ function AlignmentPanel({ data }: { data: import("@/types/api").AlignmentData })
   )
 }
 
+function ScopeCreepPanel({ data }: { data: import("@/types/api").ScopeCreepData }) {
+  const RISK_VARIANT = { low: "severity-low", medium: "severity-med", high: "severity-high" } as const
+  return (
+    <section className="premium-card rounded-xl p-8 border-t-4 border-t-primary space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="eyebrow">Scope creep</p>
+          <h2 className="text-headline-md text-charcoal mt-1">Growth since first sync</h2>
+        </div>
+        <Badge variant={RISK_VARIANT[data.risk_level]}>{data.risk_level} risk</Badge>
+      </div>
+      {data.summary && <p className="text-medium-gray text-sm">{data.summary}</p>}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter">
+        <Kpi label="Scope growth" value={`${data.scope_growth_pct}%`} />
+        <Kpi label="New stories" value={data.new_stories_added} />
+        <Kpi label="Requirements tracked" value={data.requirements_tracked} />
+        <Kpi label="Customer decisions" value={data.customer_decisions} />
+      </div>
+      {(data.estimated_schedule_impact_weeks > 0 || data.estimated_cost_impact_note) && (
+        <p className="text-sm text-charcoal">
+          Estimated impact: <span className="text-primary">{data.estimated_schedule_impact_weeks} weeks</span>
+          {data.estimated_cost_impact_note && ` — ${data.estimated_cost_impact_note}`}
+        </p>
+      )}
+    </section>
+  )
+}
+
 function Meter({ label, pct }: { label: string; pct: number }) {
   return (
     <div>
@@ -271,11 +314,12 @@ function Meter({ label, pct }: { label: string; pct: number }) {
   )
 }
 
-function Kpi({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+function Kpi({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {
+  const isPositive = typeof value === "number" && value > 0
   return (
     <div className="premium-card rounded-xl p-6 flex flex-col justify-between">
       <p className="eyebrow">{label}</p>
-      <p className={`text-headline-lg tabular-nums mt-2 ${accent && value > 0 ? "text-primary" : "text-charcoal"}`}>{value}</p>
+      <p className={`text-headline-lg tabular-nums mt-2 ${accent && isPositive ? "text-primary" : "text-charcoal"}`}>{value}</p>
     </div>
   )
 }

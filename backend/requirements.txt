@@ -14,3 +14,4 @@ litellm==1.73.6
 tenacity==9.0.0
 pypdf==5.1.0
 supabase==2.10.0
+arq==0.26.3

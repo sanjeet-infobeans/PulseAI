@@ -36,6 +36,8 @@ function navGroups(projectId: string | null): NavGroup[] {
         { label: "Ask PulseAI", href: `${p}/chat`, Icon: ChatCircleDots },
         { label: "Documents", href: `${p}/documents`, Icon: FileText },
         { label: "Risk management", href: `${p}/risks`, Icon: WarningCircle },
+        { label: "Resource risk", href: `${p}/resources`, Icon: UsersThree },
+        { label: "Sentiment", href: `${p}/sentiment`, Icon: Gauge },
       ],
     })
   }
@@ -44,6 +46,7 @@ function navGroups(projectId: string | null): NavGroup[] {
     section: "Administration",
     superAdminOnly: true,
     items: [
+      { label: "Portfolio", href: "/portfolio", Icon: SquaresFour },
       { label: "Customers", href: "/customers", Icon: Buildings },
       { label: "Projects", href: "/projects", Icon: FolderOpen },
     ],
@@ -52,7 +55,6 @@ function navGroups(projectId: string | null): NavGroup[] {
   groups.push({
     section: "Roadmap",
     items: [
-      { label: "Portfolio", href: "/portfolio", Icon: SquaresFour, future: true },
       { label: "Executive dashboard", href: "/executive", Icon: Presentation, future: true },
       { label: "Resource planning", href: "/resources", Icon: UsersThree, future: true },
       { label: "Sentiment", href: "/sentiment", Icon: Gauge, future: true },
