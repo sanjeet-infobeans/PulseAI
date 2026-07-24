@@ -17,6 +17,7 @@ from app.models.connector import Connector, ConnectorStatus
 from app.models.status_ref import StatusCategory, StatusRef
 from app.models.sprint import Sprint
 from app.models.story import Story
+from app.services import response_cache
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ async def run_sync(connector_id: uuid.UUID) -> None:
                 "Synced connector %s: %d sprints, %d stories",
                 connector_id, len(bundle.sprints), len(bundle.stories),
             )
+            await response_cache.invalidate_project_views(connector.project_id)
             await _enqueue_recompute(connector.project_id)
         except Exception as exc:  # noqa: BLE001
             await db.rollback()

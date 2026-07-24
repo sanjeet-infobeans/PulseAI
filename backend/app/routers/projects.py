@@ -13,6 +13,7 @@ from app.models.project import Project, ProjectIndustry, ProjectStatus
 from app.models.project_outcome import ProjectOutcome
 from app.models.user import User, UserRole
 from app.routers.auth import CurrentUser, require_super_admin
+from app.services import response_cache
 from app.services.outcome_service import get_outcome, mark_project_outcome
 
 router = APIRouter(tags=["projects"])
@@ -171,6 +172,7 @@ async def update_project(
         setattr(project, k, v)
     await db.commit()
     await db.refresh(project)
+    await response_cache.invalidate_project_views(project_id)
     return ProjectOut.of(project)
 
 
