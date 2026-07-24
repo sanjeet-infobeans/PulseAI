@@ -11,11 +11,19 @@ from app.services import analysis_service, confidence_service, effort_service, p
 from app.services.retrieval import build_context, simulated_signals
 
 # Overall health = weighted blend of delivery completion, schedule risk (from
-# the latest delivery prediction), and scope-creep risk — see docs plan for
-# the rationale behind these weights.
+# the latest delivery prediction), scope-creep risk, and effort/budget
+# overshoot risk — see docs plan for the rationale behind these weights.
+#
+# Schedule and effort are both derived from the same underlying velocity data
+# ("will we hit the date" vs "will we blow the hours budget"), so their
+# weights are a split of one original 0.35 "delivery pace" weight rather than
+# additions on top of it — total velocity-correlated weight stays 0.35.
+# Don't add a 5th weighted term without re-checking it isn't just a third
+# facet of that same signal.
 _HEALTH_WEIGHT_COMPLETION = 0.45
-_HEALTH_WEIGHT_SCHEDULE = 0.35
+_HEALTH_WEIGHT_SCHEDULE = 0.20
 _HEALTH_WEIGHT_SCOPE = 0.20
+_HEALTH_WEIGHT_EFFORT = 0.15
 
 
 def _scope_creep_penalty(scope_growth_pct: float) -> float:
@@ -24,6 +32,11 @@ def _scope_creep_penalty(scope_growth_pct: float) -> float:
     if scope_growth_pct <= 25:
         return 50.0
     return 100.0
+
+
+# Reuses the banding effort_service.compute_effort already derives from
+# overshoot_pct, rather than re-deriving thresholds a second time here.
+_EFFORT_RISK_PENALTY = {"low": 0.0, "medium": 50.0, "high": 100.0}
 
 
 async def get_dashboard(db: AsyncSession, project_id: uuid.UUID) -> dict:
@@ -40,13 +53,17 @@ async def get_dashboard(db: AsyncSession, project_id: uuid.UUID) -> dict:
     scope_metrics = await scope_service.scope_growth_metrics(db, project_id)
     scope_penalty = _scope_creep_penalty(scope_metrics["scope_growth_pct"])
 
+    # Effort/budget-overshoot input: same read-through, no-LLM pattern as the
+    # schedule/scope inputs above — also reused below for the effort widget.
+    effort = await effort_service.compute_effort(db, project_id)
+    effort_penalty = _EFFORT_RISK_PENALTY.get(effort["overshoot_risk"], 0.0)
+
     health = round(
         _HEALTH_WEIGHT_COMPLETION * totals["completion_pct"]
         + _HEALTH_WEIGHT_SCHEDULE * schedule_score
         + _HEALTH_WEIGHT_SCOPE * (100 - scope_penalty)
+        + _HEALTH_WEIGHT_EFFORT * (100 - effort_penalty)
     )
-
-    effort = await effort_service.compute_effort(db, project_id)
 
     confidence = await confidence_service.latest_confidence(db, project_id)
     risk = await analysis_service.latest_analysis(db, project_id, AnalysisKind.risk)
