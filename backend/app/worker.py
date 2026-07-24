@@ -165,6 +165,9 @@ async def nightly_all_projects(ctx) -> None:
 
 
 class WorkerSettings:
+    # Capped well below the engine's own pool capacity (see database.py) so
+    # concurrent job execution can't exceed Supabase's shared connection budget.
+    max_jobs = 4
     functions = [
         run_jira_sync,
         recompute_confidence,
