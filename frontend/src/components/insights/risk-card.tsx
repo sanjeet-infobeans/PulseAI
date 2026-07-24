@@ -1,15 +1,10 @@
 import { Badge } from "@/components/ui/badge"
+import { severityBorder } from "@/lib/severity"
 import type { RiskCard as RiskCardT } from "@/types/api"
-
-const BORDER = {
-  high: "border-l-primary",
-  medium: "border-l-charcoal",
-  low: "border-l-medium-gray",
-}
 
 export function RiskCard({ risk, index }: { risk: RiskCardT; index: number }) {
   return (
-    <div className={`premium-card rounded-xl p-6 border-t-4 ${BORDER[risk.severity].replace("border-l", "border-t")}`}>
+    <div className={`premium-card rounded-xl p-6 border-t-4 ${severityBorder(risk.severity).replace("border-l", "border-t")}`}>
       <div className="flex justify-between items-center mb-4">
         <Badge variant={risk.severity === "high" ? "severity-high" : risk.severity === "medium" ? "severity-med" : "severity-low"}>
           {risk.severity} impact

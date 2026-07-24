@@ -15,6 +15,7 @@ import { PredictionCard } from "@/components/health/prediction-card"
 import { EffortPanel } from "@/components/health/effort-panel"
 import { RiskCard } from "@/components/insights/risk-card"
 import { EditProjectDialog } from "@/components/projects/edit-project-dialog"
+import { sortBySeverity } from "@/lib/severity"
 import { fmtRelative, fmtPct } from "@/lib/utils"
 
 export function ProjectOverviewContent({ projectId }: { projectId: string }) {
@@ -118,7 +119,7 @@ export function ProjectOverviewContent({ projectId }: { projectId: string }) {
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-            {dash.risk_cards.slice(0, 3).map((r, i) => <RiskCard key={i} risk={r} index={i} />)}
+            {sortBySeverity(dash.risk_cards).slice(0, 3).map((r, i) => <RiskCard key={i} risk={r} index={i} />)}
           </div>
         </section>
       )}

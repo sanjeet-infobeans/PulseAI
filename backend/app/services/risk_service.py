@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import case, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -17,6 +17,16 @@ from app.llm import client, prompts
 from app.models.llm_call_log import LLMFeature
 from app.models.risk_item import RiskItem, RiskSeverity, RiskSourceType, RiskStatus
 from app.services.retrieval import build_context
+
+# RiskSeverity is stored as a plain string column (native_enum=False), so
+# RiskItem.severity.desc() sorts alphabetically ("medium" > "low" > "high")
+# rather than by actual severity — this expresses the real high-to-low rank.
+_SEVERITY_RANK = case(
+    (RiskItem.severity == RiskSeverity.high, 0),
+    (RiskItem.severity == RiskSeverity.medium, 1),
+    (RiskItem.severity == RiskSeverity.low, 2),
+    else_=1,
+)
 
 
 def _severity(value) -> RiskSeverity:
@@ -80,7 +90,7 @@ async def scan_project_risks(db: AsyncSession, project_id: uuid.UUID) -> list[Ri
     return (
         await db.execute(
             select(RiskItem).where(RiskItem.project_id == project_id)
-            .order_by(RiskItem.status, RiskItem.severity.desc(), RiskItem.last_seen_at.desc())
+            .order_by(RiskItem.status, _SEVERITY_RANK, RiskItem.last_seen_at.desc())
         )
     ).scalars().all()
 
@@ -89,7 +99,7 @@ async def get_active_risks(db: AsyncSession, project_id: uuid.UUID) -> list[Risk
     return (
         await db.execute(
             select(RiskItem).where(RiskItem.project_id == project_id, RiskItem.status == RiskStatus.active)
-            .order_by(RiskItem.severity.desc(), RiskItem.last_seen_at.desc())
+            .order_by(_SEVERITY_RANK, RiskItem.last_seen_at.desc())
         )
     ).scalars().all()
 

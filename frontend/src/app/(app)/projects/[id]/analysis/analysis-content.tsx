@@ -11,6 +11,7 @@ import { useLatestAnalysis, useLatestJudgeReview, useRunAnalysis, useRunJudge } 
 import { useRunSimulation } from "@/hooks/use-simulation"
 import { useRisks, useScanRisks, useSetRiskStatus } from "@/hooks/use-risks"
 import { useActionItems, useSetActionItemStatus } from "@/hooks/use-action-items"
+import { severityBorder, sortBySeverity } from "@/lib/severity"
 import { fmtRelative } from "@/lib/utils"
 import type { AnalysisKind } from "@/types/api"
 
@@ -80,8 +81,8 @@ function ActiveRisksPanel({ projectId }: { projectId: string }) {
 
       {risks && risks.length > 0 && (
         <div className="space-y-3">
-          {risks.map((r) => (
-            <div key={r.id} className="rounded-lg border-l-4 border-l-primary bg-background p-5">
+          {sortBySeverity(risks).map((r) => (
+            <div key={r.id} className={`rounded-lg border-l-4 ${severityBorder(r.severity)} bg-background p-5`}>
               <div className="flex items-center justify-between gap-4">
                 <h4 className="text-charcoal font-normal">{r.title}</h4>
                 <div className="flex items-center gap-2 shrink-0">
@@ -319,8 +320,10 @@ function StructuredView({ kind, structured }: { kind: AnalysisKind; structured: 
   if (kind === "risk" && Array.isArray(structured.risks)) {
     return (
       <div className="mt-8 space-y-4">
-        {(structured.risks as Array<Record<string, string>>).map((r, i) => (
-          <div key={i} className="rounded-lg border-l-4 border-l-primary bg-background p-5">
+        {sortBySeverity(
+          structured.risks as unknown as Array<{ severity: string; title: string; impact?: string; evidence?: string }>
+        ).map((r, i) => (
+          <div key={i} className={`rounded-lg border-l-4 ${severityBorder(r.severity)} bg-background p-5`}>
             <div className="flex items-center justify-between">
               <h4 className="text-charcoal font-normal">{r.title}</h4>
               <Badge variant={r.severity === "high" ? "severity-high" : r.severity === "medium" ? "severity-med" : "severity-low"}>
