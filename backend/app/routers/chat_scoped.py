@@ -179,12 +179,19 @@ async def ask_scoped(
     async def event_stream():
         parts: list[str] = []
         try:
-            async for delta in client.stream(
+            async for event in client.stream(
                 feature=LLMFeature.chat, messages=messages,
                 model=settings.llm_model_chat, project_id=project_ids[0] if len(project_ids) == 1 else None,
             ):
-                parts.append(delta)
-                yield f"data: {json.dumps({'type': 'token', 'value': delta})}\n\n"
+                if event["type"] == "delta":
+                    parts.append(event["text"])
+                    yield f"data: {json.dumps({'type': 'token', 'value': event['text']})}\n\n"
+                elif event["type"] == "retry":
+                    # A key/provider failed mid-response — the next attempt
+                    # regenerates the full answer from scratch, so discard
+                    # whatever partial text this attempt had produced.
+                    parts = []
+                    yield f"data: {json.dumps({'type': 'retry'})}\n\n"
         except Exception as exc:  # noqa: BLE001
             yield f"data: {json.dumps({'type': 'error', 'value': str(exc)})}\n\n"
 

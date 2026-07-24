@@ -6,6 +6,7 @@ export type StreamEvent =
   | { type: "token"; value: string }
   | { type: "citations"; value: Array<{ type: string; ref: string; label: string }> }
   | { type: "error"; value: string }
+  | { type: "retry" }
   | { type: "done" }
 
 /** POST + Server-Sent-Events reader. EventSource is GET-only, so we read the

@@ -63,6 +63,15 @@ export function ChatThread({
                 }
                 return copy
               })
+            } else if (e.type === "retry") {
+              // The key/provider serving this response failed mid-stream;
+              // the backend is regenerating the full answer from scratch —
+              // clear the partial text so it doesn't look duplicated/garbled.
+              setMessages((m) => {
+                const copy = [...m]
+                copy[copy.length - 1] = { ...copy[copy.length - 1], content: "" }
+                return copy
+              })
             } else if (e.type === "citations") {
               setMessages((m) => {
                 const copy = [...m]

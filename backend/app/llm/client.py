@@ -150,13 +150,18 @@ async def stream(
     project_id: uuid.UUID | None = None,
     max_tokens: int | None = None,
     temperature: float = 0.4,
-) -> AsyncIterator[str]:
-    """Yield text deltas. Router wraps them as SSE events; cost logged on close.
-
-    Key/provider fallback applies to opening the stream — every configured
-    key is tried until one starts successfully. Once the first chunk has
-    been yielded to the caller, a fallback would duplicate output already
-    sent, so a failure past that point just propagates.
+) -> AsyncIterator[dict]:
+    """Yields {"type": "delta", "text": str} for content, and {"type":
+    "retry"} whenever a candidate fails (whether opening the stream or
+    partway through one, e.g. a mid-response rate limit) and generation is
+    restarting on the next key/provider — callers MUST discard any partial
+    text already shown when they see "retry", since the next attempt
+    regenerates the full answer from scratch rather than resuming
+    mid-sentence (there's no way to hand a partial completion back to a
+    different provider and have it continue coherently). Raises only once
+    every configured key across both providers has failed — this is what
+    makes rotation actually protect a chat response instead of only
+    protecting the moment the stream opens.
     """
     start = time.monotonic()
     candidates = _candidates(model)
@@ -165,39 +170,36 @@ async def stream(
                    input_tokens=None, output_tokens=None, status_code=503, start=start)
         raise HTTPException(status_code=503, detail="No LLM API keys configured (GROQ_API_KEYS / GEMINI_API_KEYS)")
 
-    resp = None
-    attempt_model = model
     last_exc: Exception | None = None
-    for attempt_model, api_key in candidates:
+    for i, (attempt_model, api_key) in enumerate(candidates):
+        input_tokens: int | None = None
+        output_tokens: int | None = None
         try:
             resp = await litellm.acompletion(
                 model=attempt_model, messages=messages, api_key=api_key,
                 temperature=temperature, max_tokens=max_tokens or settings.llm_max_tokens,
                 stream=True, stream_options={"include_usage": True},
             )
-            break
-        except Exception as exc:  # noqa: BLE001 — this key/provider is down, try the next one
+            async for chunk in resp:
+                if getattr(chunk, "usage", None):
+                    input_tokens = chunk.usage.prompt_tokens
+                    output_tokens = chunk.usage.completion_tokens
+                delta = chunk.choices[0].delta.content if chunk.choices else None
+                if delta:
+                    yield {"type": "delta", "text": delta}
+        except Exception as exc:  # noqa: BLE001 — this key/provider is down (or died mid-stream), try the next one
             last_exc = exc
-            logger.warning("LLM stream open failed on %s (key ...%s): %s — trying next key",
+            logger.warning("LLM stream failed on %s (key ...%s): %s — trying next key",
                            attempt_model, api_key[-4:], exc)
+            if i < len(candidates) - 1:
+                yield {"type": "retry"}
             continue
+        else:
+            await _log(feature=feature, model=attempt_model, project_id=project_id,
+                       input_tokens=input_tokens, output_tokens=output_tokens,
+                       status_code=200, start=start)
+            return
 
-    if resp is None:
-        await _log(feature=feature, model=model, project_id=project_id,
-                   input_tokens=None, output_tokens=None, status_code=502, start=start)
-        raise _map_error(last_exc)
-
-    input_tokens: int | None = None
-    output_tokens: int | None = None
-    try:
-        async for chunk in resp:
-            if getattr(chunk, "usage", None):
-                input_tokens = chunk.usage.prompt_tokens
-                output_tokens = chunk.usage.completion_tokens
-            delta = chunk.choices[0].delta.content if chunk.choices else None
-            if delta:
-                yield delta
-    finally:
-        await _log(feature=feature, model=attempt_model, project_id=project_id,
-                   input_tokens=input_tokens, output_tokens=output_tokens,
-                   status_code=200, start=start)
+    await _log(feature=feature, model=model, project_id=project_id,
+               input_tokens=None, output_tokens=None, status_code=502, start=start)
+    raise _map_error(last_exc)
