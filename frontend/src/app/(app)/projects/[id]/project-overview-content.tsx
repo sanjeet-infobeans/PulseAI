@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { HealthGauge } from "@/components/health/health-gauge"
 import { ConfidenceMeter } from "@/components/health/confidence-meter"
 import { PredictionCard } from "@/components/health/prediction-card"
+import { EffortPanel } from "@/components/health/effort-panel"
 import { RiskCard } from "@/components/insights/risk-card"
 import { EditProjectDialog } from "@/components/projects/edit-project-dialog"
 import { fmtRelative, fmtPct } from "@/lib/utils"
@@ -103,6 +104,9 @@ export function ProjectOverviewContent({ projectId }: { projectId: string }) {
         onCompute={() => computePrediction.mutate()}
         computing={computePrediction.isPending}
       />
+
+      {/* Effort vs estimate */}
+      <EffortPanel effort={dash?.effort ?? null} projectId={projectId} />
 
       {/* Risk strip */}
       {dash?.risk_cards && dash.risk_cards.length > 0 && (

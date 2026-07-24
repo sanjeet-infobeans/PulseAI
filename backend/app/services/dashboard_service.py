@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.ai_analysis import AnalysisKind
 from app.models.sprint import Sprint, SprintState
 from app.models.story import Story
-from app.services import analysis_service, confidence_service, prediction_service, scope_service
+from app.services import analysis_service, confidence_service, effort_service, prediction_service, scope_service
 from app.services.retrieval import build_context, simulated_signals
 
 # Overall health = weighted blend of delivery completion, schedule risk (from
@@ -45,6 +45,8 @@ async def get_dashboard(db: AsyncSession, project_id: uuid.UUID) -> dict:
         + _HEALTH_WEIGHT_SCHEDULE * schedule_score
         + _HEALTH_WEIGHT_SCOPE * (100 - scope_penalty)
     )
+
+    effort = await effort_service.compute_effort(db, project_id)
 
     confidence = await confidence_service.latest_confidence(db, project_id)
     risk = await analysis_service.latest_analysis(db, project_id, AnalysisKind.risk)
@@ -122,6 +124,7 @@ async def get_dashboard(db: AsyncSession, project_id: uuid.UUID) -> dict:
         } if ref else None,
         "status_counts": context["status_counts"],
         "totals": totals,
+        "effort": effort,
         "sprint_panel": sprint_panel,
         "risk_cards": (risk.structured or {}).get("risks", []) if risk else [],
         "recommendations": (recs.structured or {}).get("recommendations", []) if recs else [],

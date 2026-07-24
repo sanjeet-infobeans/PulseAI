@@ -397,6 +397,16 @@ export interface DashboardData {
   } | null
   status_counts: Partial<Record<StatusCategory, number>>
   totals: { stories: number; done: number; completion_pct: number }
+  effort: {
+    estimated_hours: number | null
+    consumed_hours: number
+    remaining_hours: number
+    projected_total_hours: number
+    done_points: number
+    remaining_points: number
+    overshoot_pct: number | null
+    overshoot_risk: "low" | "medium" | "high" | null
+  }
   sprint_panel: {
     active: {
       name: string

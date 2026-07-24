@@ -59,6 +59,7 @@ async def _enqueue_recompute(project_id: uuid.UUID) -> None:
     pool = await get_arq_pool()
     pid = str(project_id)
     await pool.enqueue_job("append_velocity_snapshot", pid)
+    await pool.enqueue_job("recompute_effort_risk", pid)
     await pool.enqueue_job("append_scope_snapshot", pid)
     await pool.enqueue_job("recompute_knowledge_map", pid)
     await pool.enqueue_job("recompute_confidence", pid)

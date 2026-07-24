@@ -45,6 +45,14 @@ async def append_velocity_snapshot(ctx, project_id: str) -> None:
         await _run(db, uuid.UUID(project_id))
 
 
+async def recompute_effort_risk(ctx, project_id: str) -> None:
+    from app.database import AsyncSessionLocal
+    from app.services.effort_service import sync_effort_risk
+
+    async with AsyncSessionLocal() as db:
+        await sync_effort_risk(db, uuid.UUID(project_id))
+
+
 async def append_scope_snapshot(ctx, project_id: str) -> None:
     from app.database import AsyncSessionLocal
     from app.services.metrics_service import append_scope_snapshot as _run
@@ -161,6 +169,7 @@ class WorkerSettings:
         run_jira_sync,
         recompute_confidence,
         append_velocity_snapshot,
+        recompute_effort_risk,
         append_scope_snapshot,
         recompute_knowledge_map,
         sync_requirement_catalog,
