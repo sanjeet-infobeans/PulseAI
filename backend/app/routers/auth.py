@@ -17,6 +17,7 @@ from app.config import settings
 from app.database import get_db
 from app.models.user import User, UserRole
 from app.security import hash_password, verify_password
+from app.services.jira_sync import enqueue_customer_login_sync
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -126,6 +127,10 @@ async def login(
 
     user.last_login_at = datetime.now(timezone.utc)
     await db.commit()
+
+    if user.role == UserRole.customer and user.customer_id:
+        await enqueue_customer_login_sync(db, user.customer_id)
+
     return TokenOut(token=_create_token(user))
 
 

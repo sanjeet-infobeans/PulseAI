@@ -96,37 +96,39 @@ export function SettingsContent({ projectId }: { projectId: string }) {
         <Badge variant={badge.variant}>{badge.label}</Badge>
       </div>
 
-      <form onSubmit={handleSave} className="premium-card rounded-xl p-8 space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <Field label="Base URL" value={baseUrl} onChange={setBaseUrl} placeholder="https://acme.atlassian.net" required />
-          <Field label="Account email" value={email} onChange={setEmail} placeholder="you@acme.com" required />
-          <Field label="Project key" value={projectKey} onChange={setProjectKey} placeholder="ATLAS" required />
-          <Field label="Board ID" value={boardId} onChange={setBoardId} placeholder="42" required />
-          <Field label="Story-point field" value={spField} onChange={setSpField} placeholder="customfield_10016" />
-          <Field label="Token secret ref (env var)" value={secretRef} onChange={setSecretRef} placeholder="JIRA_TOKEN_ATLAS" required maxLength={128} />
-        </div>
-        <p className="text-xs text-medium-gray">
-          The API token is never stored. Set it as the named environment variable on the server; PulseAI reads it at sync time.
-        </p>
-        <div className="flex items-center gap-3">
-          <Button type="submit" disabled={assign.isPending}>
-            {assign.isPending ? "Saving…" : jira ? "Update connector" : "Save connector"}
-          </Button>
-          {jira && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={test.isPending}
-              onClick={() => test.mutate(jira.id)}
-            >
-              {test.isPending ? "Testing…" : "Test connection"}
+      {isSuperAdmin(user?.role) && (
+        <form onSubmit={handleSave} className="premium-card rounded-xl p-8 space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <Field label="Base URL" value={baseUrl} onChange={setBaseUrl} placeholder="https://acme.atlassian.net" required />
+            <Field label="Account email" value={email} onChange={setEmail} placeholder="you@acme.com" required />
+            <Field label="Project key" value={projectKey} onChange={setProjectKey} placeholder="ATLAS" required />
+            <Field label="Board ID" value={boardId} onChange={setBoardId} placeholder="42" required />
+            <Field label="Story-point field" value={spField} onChange={setSpField} placeholder="customfield_10016" />
+            <Field label="Token secret ref (env var)" value={secretRef} onChange={setSecretRef} placeholder="JIRA_TOKEN_ATLAS" required maxLength={128} />
+          </div>
+          <p className="text-xs text-medium-gray">
+            The API token is never stored. Set it as the named environment variable on the server; PulseAI reads it at sync time.
+          </p>
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={assign.isPending}>
+              {assign.isPending ? "Saving…" : jira ? "Update connector" : "Save connector"}
             </Button>
-          )}
-        </div>
-        {assign.isError && <p className="text-xs text-primary">{(assign.error as Error).message}</p>}
-        {test.isError && <p className="text-xs text-primary">{(test.error as Error).message}</p>}
-        {test.isSuccess && <p className="text-xs text-good">Connection OK.</p>}
-      </form>
+            {jira && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={test.isPending}
+                onClick={() => test.mutate(jira.id)}
+              >
+                {test.isPending ? "Testing…" : "Test connection"}
+              </Button>
+            )}
+          </div>
+          {assign.isError && <p className="text-xs text-primary">{(assign.error as Error).message}</p>}
+          {test.isError && <p className="text-xs text-primary">{(test.error as Error).message}</p>}
+          {test.isSuccess && <p className="text-xs text-good">Connection OK.</p>}
+        </form>
+      )}
 
       {jira && (
         <div className="premium-card rounded-xl p-8 border-l-4 border-l-primary flex items-center justify-between">
@@ -148,14 +150,16 @@ export function SettingsContent({ projectId }: { projectId: string }) {
               )}
             </p>
           </div>
-          <Button
-            variant="charcoal"
-            disabled={polling}
-            onClick={() => sync.mutate(jira.id)}
-          >
-            <ArrowsClockwise size={16} className={polling ? "animate-spin" : ""} />
-            {polling ? "Syncing…" : "Sync project"}
-          </Button>
+          {isSuperAdmin(user?.role) && (
+            <Button
+              variant="charcoal"
+              disabled={polling}
+              onClick={() => sync.mutate(jira.id)}
+            >
+              <ArrowsClockwise size={16} className={polling ? "animate-spin" : ""} />
+              {polling ? "Syncing…" : "Sync project"}
+            </Button>
+          )}
         </div>
       )}
 

@@ -15,6 +15,7 @@ import { PredictionCard } from "@/components/health/prediction-card"
 import { EffortPanel } from "@/components/health/effort-panel"
 import { RiskCard } from "@/components/insights/risk-card"
 import { EditProjectDialog } from "@/components/projects/edit-project-dialog"
+import { isSuperAdmin, useCurrentUser } from "@/lib/auth"
 import { sortBySeverity } from "@/lib/severity"
 import { fmtRelative, fmtPct } from "@/lib/utils"
 
@@ -22,6 +23,8 @@ export function ProjectOverviewContent({ projectId }: { projectId: string }) {
   const { data: project } = useProject(projectId)
   const { data: connectors } = useConnectors(projectId)
   const { data: dash, isLoading } = useDashboard(projectId)
+  const user = useCurrentUser()
+  const isAdmin = isSuperAdmin(user?.role)
   const compute = useComputeConfidence(projectId)
   const runAnalysis = useRunAnalysis(projectId)
   const alignment = useAlignment(projectId)
@@ -52,11 +55,15 @@ export function ProjectOverviewContent({ projectId }: { projectId: string }) {
   if (!isLoading && !hasData) {
     return (
       <div className="space-y-8">
-        <DashboardHeader projectId={projectId} name={project?.name} synced={jira?.last_synced_at ?? null} onAnalyze={analyzeSprint} analyzing={analyzing} disabled />
+        <DashboardHeader projectId={projectId} name={project?.name} synced={jira?.last_synced_at ?? null} onAnalyze={analyzeSprint} analyzing={analyzing} disabled isAdmin={isAdmin} />
         <div className="premium-card rounded-xl p-12 text-center">
           <p className="text-charcoal">No delivery data yet</p>
           <p className="text-medium-gray text-sm mt-1">Connect Jira and run a sync to populate the dashboard.</p>
-          <Button asChild className="mt-5"><Link href={`/projects/${projectId}/settings`}>Configure Jira</Link></Button>
+          {isAdmin ? (
+            <Button asChild className="mt-5"><Link href={`/projects/${projectId}/settings`}>Configure Jira</Link></Button>
+          ) : (
+            <p className="text-medium-gray text-sm mt-5">Your Jira data will sync automatically.</p>
+          )}
         </div>
       </div>
     )
@@ -66,7 +73,7 @@ export function ProjectOverviewContent({ projectId }: { projectId: string }) {
     <div className="space-y-gutter">
       <DashboardHeader
         projectId={projectId} name={project?.name} synced={jira?.last_synced_at ?? null}
-        onAnalyze={analyzeSprint} analyzing={analyzing}
+        onAnalyze={analyzeSprint} analyzing={analyzing} isAdmin={isAdmin}
       />
 
       {/* Hero row */}
@@ -226,7 +233,7 @@ export function ProjectOverviewContent({ projectId }: { projectId: string }) {
 }
 
 function DashboardHeader({
-  projectId, name, synced, onAnalyze, analyzing, disabled,
+  projectId, name, synced, onAnalyze, analyzing, disabled, isAdmin,
 }: {
   projectId: string
   name?: string
@@ -234,6 +241,7 @@ function DashboardHeader({
   onAnalyze: () => void
   analyzing: boolean
   disabled?: boolean
+  isAdmin: boolean
 }) {
   return (
     <div className="flex items-end justify-between">
@@ -245,10 +253,12 @@ function DashboardHeader({
         </p>
       </div>
       <div className="flex items-center gap-3">
-        <EditProjectDialog projectId={projectId} />
-        <Button variant="outline" asChild>
-          <Link href={`/projects/${projectId}/settings`}><Gear size={16} /> Jira</Link>
-        </Button>
+        {isAdmin && <EditProjectDialog projectId={projectId} />}
+        {isAdmin && (
+          <Button variant="outline" asChild>
+            <Link href={`/projects/${projectId}/settings`}><Gear size={16} /> Jira</Link>
+          </Button>
+        )}
         <Button onClick={onAnalyze} disabled={analyzing || disabled}>
           <Sparkle size={16} className={analyzing ? "animate-pulse" : ""} />
           {analyzing ? "Analyzing…" : "Analyze sprint"}

@@ -6,20 +6,24 @@ open-your-own-session convention as document_service.process_document.
 """
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.connectors.registry import get_connector
 from app.connectors.schemas import NormalizedBundle
 from app.database import AsyncSessionLocal
-from app.models.connector import Connector, ConnectorStatus
+from app.models.connector import Connector, ConnectorMode, ConnectorStatus, ConnectorType
+from app.models.project import Project
 from app.models.status_ref import StatusCategory, StatusRef
 from app.models.sprint import Sprint
 from app.models.story import Story
 from app.services import response_cache
 
 logger = logging.getLogger(__name__)
+
+_LOGIN_SYNC_THROTTLE = timedelta(minutes=15)
 
 
 async def run_sync(connector_id: uuid.UUID) -> None:
@@ -66,6 +70,42 @@ async def _enqueue_recompute(project_id: uuid.UUID) -> None:
     await pool.enqueue_job("recompute_knowledge_map", pid)
     await pool.enqueue_job("recompute_confidence", pid)
     await pool.enqueue_job("recompute_prediction", pid)
+
+
+async def enqueue_customer_login_sync(db: AsyncSession, customer_id: uuid.UUID) -> None:
+    """Best-effort: queue a Jira sync for every real Jira connector belonging to
+    this customer, unless one already ran within the throttle window or is
+    already in flight. Never raises — a failure here must not break login."""
+    from app.queue import get_arq_pool
+
+    try:
+        rows = (
+            await db.execute(
+                select(Connector)
+                .join(Project, Connector.project_id == Project.id)
+                .where(
+                    Project.customer_id == customer_id,
+                    Connector.type == ConnectorType.jira,
+                    Connector.mode == ConnectorMode.real,
+                )
+            )
+        ).scalars().all()
+        now = datetime.now(timezone.utc)
+        due = [
+            c for c in rows
+            if c.status != ConnectorStatus.syncing
+            and (c.last_synced_at is None or c.last_synced_at < now - _LOGIN_SYNC_THROTTLE)
+        ]
+        if not due:
+            return
+        pool = await get_arq_pool()
+        for c in due:
+            c.status = ConnectorStatus.syncing
+            await pool.enqueue_job("run_jira_sync", str(c.id))
+        await db.commit()
+    except Exception:  # noqa: BLE001 — best-effort; must never break login
+        await db.rollback()
+        logger.exception("Auto-sync-on-login enqueue failed for customer %s", customer_id)
 
 
 async def _persist(db, connector: Connector, bundle: NormalizedBundle) -> None:
